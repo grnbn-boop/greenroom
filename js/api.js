@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ─── CONFIG ──────────────────────────────────────────────────
 // Set these from your Supabase project: Settings > API
 export const SUPABASE_URL  = "https://pbzmxzfbqqcdilbydhda.supabase.co";
-export const SUPABASE_ANON = "sb_publishable_CbeHLeaXmYNnEAwgq3ycuQ_DT4Gcw70";
+export const SUPABASE_ANON = "sb_publishable_nDq2imN80sYhGb3fnrO1ig_AjAAX6EE";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
