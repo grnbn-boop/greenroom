@@ -257,5 +257,20 @@
 <!-- Load app as ES module so it can import from api.js -->
 <script type="module" src="js/app.js"></script>
 
+<!-- Auth callback handler — must load before app.js -->
+<script type="module">
+  import { supabase } from "./js/api.js";
+
+  // Supabase puts auth tokens in the URL hash after email confirmation
+  const hash = window.location.hash;
+  if (hash && hash.includes("access_token")) {
+    const { data, error } = await supabase.auth.getSession();
+    if (!error && data.session) {
+      // Clean the token out of the URL without reloading the page
+      history.replaceState(null, "", window.location.pathname);
+    }
+  }
+
+</script>
 </body>
 </html>
