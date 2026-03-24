@@ -156,8 +156,12 @@
       <div class="detail-meta" id="detailMeta"></div>
     </div>
     <div class="detail-scores" id="detailScores"></div>
+    <div id="detailDealStats"></div>
     <div class="reviews-section">
-      <div class="section-title">Artist Reviews</div>
+      <div class="reviews-section-header">
+        <div class="section-title">Artist Reviews</div>
+        <div id="detailPaymentFilter" class="payment-filter-pills"></div>
+      </div>
       <div id="detailReviews"></div>
     </div>
     <div style="padding:0 1.5rem 0.5rem;">
@@ -213,6 +217,24 @@
         <div class="rating-field"><label>Promoter Comms</label><div class="star-picker" id="stars-promo"></div></div>
         <div class="rating-field"><label>Pay / Deal</label><div class="star-picker" id="stars-pay"></div></div>
         <div class="rating-field"><label>Would Play Again?</label><div class="star-picker" id="stars-again"></div></div>
+      </div>
+
+      <div class="payment-section">
+        <h4>Payment &amp; Deal</h4>
+        <div class="field" style="margin-bottom:8px;">
+          <label>How were you compensated? *</label>
+          <select id="formPaymentType" onchange="toggleDealAmount()">
+            <option value="">Select…</option>
+            <option value="paid">Paid — flat fee / guarantee</option>
+            <option value="door_deal">Door deal / revenue share</option>
+            <option value="free">Free / no payment</option>
+            <option value="pay_to_play">Pay to play — I paid to perform</option>
+          </select>
+        </div>
+        <div class="field" id="dealAmountField" style="display:none;margin-bottom:0;">
+          <label id="dealAmountLabel">Amount ($) — optional</label>
+          <input type="number" id="formDealAmount" placeholder="e.g. 200" min="0" step="1">
+        </div>
       </div>
 
       <div class="proof-section">

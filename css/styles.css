@@ -366,6 +366,53 @@ nav {
 .verification-info ul { padding-left: 1.2rem; }
 .verification-info li { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; line-height: 1.5; }
 
+/* ── PAYMENT SECTION (form) ── */
+.payment-section {
+  background: rgba(26,46,26,0.05); border: 1px solid rgba(26,46,26,0.15);
+  border-radius: 6px; padding: 12px 14px; margin-bottom: 1rem;
+}
+.payment-section h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--green-light); margin-bottom: 8px; }
+
+/* ── DEAL STATS ROW (detail panel) ── */
+.deal-stats-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  padding: 10px 1.5rem; background: rgba(26,46,26,0.04);
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.deal-stat { color: var(--text-muted); }
+.deal-stat strong { color: var(--green); }
+.deal-stat-note { font-size: 11px; color: var(--text-muted); }
+.deal-stat-sep { color: var(--border); font-size: 16px; }
+.p2p-warning { color: #b45309; font-weight: 600; }
+
+/* ── REVIEWS SECTION HEADER ── */
+.reviews-section-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; }
+.reviews-section-header .section-title { margin-bottom: 0; }
+
+/* ── PAYMENT FILTER PILLS (detail panel) ── */
+.payment-filter-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+.payment-pill {
+  background: #fff; border: 1px solid var(--border); border-radius: 20px;
+  padding: 4px 10px; font-family: 'Instrument Sans', sans-serif;
+  font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.payment-pill:hover { border-color: var(--green-light); color: var(--green); }
+.payment-pill.active { background: var(--green); color: var(--cream); border-color: var(--green); }
+.pill-count { font-family: 'DM Mono', monospace; font-size: 11px; opacity: 0.75; margin-left: 2px; }
+
+/* ── PAYMENT TYPE TAG (on reviews) ── */
+.pay-type-tag {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
+  background: rgba(74,124,74,0.1); color: var(--green-light);
+  border: 1px solid rgba(74,124,74,0.2); border-radius: 3px; padding: 1px 6px;
+}
+.pay-type-p2p {
+  background: rgba(180,83,9,0.08); color: #b45309;
+  border-color: rgba(180,83,9,0.2);
+}
+.review-p2p { border-left: 3px solid #b45309; }
+
 /* ── ANONYMOUS TOGGLE ── */
 .anon-toggle {
   display: flex; align-items: flex-start; gap: 10px;

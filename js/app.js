@@ -22,6 +22,8 @@ let state = {
   loading: false,
   pendingReviews: [],
   pendingSuggestions: [],
+  detailReviews: [],
+  detailPaymentFilter: "all",
   starRatings: { sound: 0, load: 0, green: 0, promo: 0, pay: 0, again: 0 },
   osmImporting: false,
 };
@@ -296,6 +298,13 @@ async function openDetail(id) {
   }
 }
 
+const PAYMENT_LABELS = {
+  paid:        "Paid",
+  door_deal:   "Door Deal",
+  free:        "Free",
+  pay_to_play: "Pay to Play",
+};
+
 function renderDetailPanel(venue, reviews) {
   document.getElementById("detailTitle").textContent = venue.name;
   document.getElementById("detailMeta").innerHTML = `
@@ -307,7 +316,7 @@ function renderDetailPanel(venue, reviews) {
 
   const scoreDefs = [
     ["avg_sound", "Sound & PA"], ["avg_load_in", "Load-in"], ["avg_green_room", "Green Room"],
-    ["avg_promo", "Promoter"],   ["avg_pay", "Pay / Deal"], ["avg_again", "Play Again"],
+    ["avg_promo", "Promoter"],   ["avg_pay", "Pay ★"],      ["avg_again", "Play Again"],
   ];
   document.getElementById("detailScores").innerHTML = scoreDefs.map(([key, label]) => {
     const val = venue[key];
@@ -317,33 +326,110 @@ function renderDetailPanel(venue, reviews) {
     </div>`;
   }).join("");
 
+  // Cache reviews and reset filter
+  state.detailReviews = reviews;
+  state.detailPaymentFilter = "all";
+
+  // Deal stats row
+  renderDealStats(reviews);
+
+  // Filter pills + review list
+  renderDetailReviews();
+}
+
+function renderDealStats(reviews) {
+  const el = document.getElementById("detailDealStats");
+  if (!el) return;
+  if (!reviews.length) { el.innerHTML = ""; return; }
+
+  const paidAmounts = reviews.filter(r => r.payment_type === "paid" && r.deal_amount != null).map(r => r.deal_amount);
+  const doorAmounts = reviews.filter(r => r.payment_type === "door_deal" && r.deal_amount != null).map(r => r.deal_amount);
+  const p2pCount    = reviews.filter(r => r.payment_type === "pay_to_play").length;
+
+  const stats = [];
+  if (paidAmounts.length) {
+    const avg = paidAmounts.reduce((a, b) => a + b, 0) / paidAmounts.length;
+    stats.push(`<span class="deal-stat">Avg. paid fee: <strong>$${avg.toFixed(0)}</strong> <span class="deal-stat-note">(${paidAmounts.length} report${paidAmounts.length !== 1 ? "s" : ""})</span></span>`);
+  }
+  if (doorAmounts.length) {
+    const avg = doorAmounts.reduce((a, b) => a + b, 0) / doorAmounts.length;
+    stats.push(`<span class="deal-stat">Avg. door payout: <strong>$${avg.toFixed(0)}</strong> <span class="deal-stat-note">(${doorAmounts.length} report${doorAmounts.length !== 1 ? "s" : ""})</span></span>`);
+  }
+  if (p2pCount) {
+    stats.push(`<span class="deal-stat p2p-warning">⚠ ${p2pCount} pay-to-play report${p2pCount !== 1 ? "s" : ""}</span>`);
+  }
+
+  el.innerHTML = stats.length
+    ? `<div class="deal-stats-row">${stats.join('<span class="deal-stat-sep">·</span>')}</div>`
+    : "";
+}
+
+function renderDetailReviews() {
+  const filter = state.detailPaymentFilter;
+  const all    = state.detailReviews;
+
+  // Build filter pills — only show types that exist
+  const pillEl = document.getElementById("detailPaymentFilter");
+  if (pillEl) {
+    const counts = { all: all.length };
+    ["paid","door_deal","free","pay_to_play"].forEach(t => {
+      const n = all.filter(r => r.payment_type === t).length;
+      if (n) counts[t] = n;
+    });
+    const pills = Object.entries(counts).map(([type, n]) => {
+      const label = type === "all" ? "All" : PAYMENT_LABELS[type];
+      const active = filter === type ? "active" : "";
+      return `<button class="payment-pill ${active}" onclick="setDetailPaymentFilter('${type}')">${label} <span class="pill-count">${n}</span></button>`;
+    });
+    pillEl.innerHTML = pills.join("");
+  }
+
+  // Filter and render reviews
+  const filtered = filter === "all" ? all : all.filter(r => r.payment_type === filter);
   const rev = document.getElementById("detailReviews");
-  if (!reviews.length) {
+  if (!rev) return;
+
+  if (!all.length) {
     rev.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:14px;font-style:italic;">No verified reviews yet.<br>Be the first artist to share your experience.</div>`;
-  } else {
-    rev.innerHTML = reviews.map(r => {
-      const anon = r.anonymous;
-      const displayName = anon ? "Verified Artist" : escHtml(r.artist_name);
-      const displayDate = anon ? monthYear(r.show_date) : r.show_date;
-      return `
-        <div class="review-item">
-          <div class="review-top">
-            <div class="reviewer-name">${displayName}${anon ? ' <span class="anon-tag">anonymous</span>' : ""}</div>
+    return;
+  }
+  if (!filtered.length) {
+    rev.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:14px;font-style:italic;">No ${PAYMENT_LABELS[filter]?.toLowerCase()} reviews yet.</div>`;
+    return;
+  }
+
+  rev.innerHTML = filtered.map(r => {
+    const anon        = r.anonymous;
+    const displayName = anon ? "Verified Artist" : escHtml(r.artist_name);
+    const displayDate = anon ? monthYear(r.show_date) : r.show_date;
+    const payLabel    = r.payment_type ? PAYMENT_LABELS[r.payment_type] : null;
+    const isPay2Play  = r.payment_type === "pay_to_play";
+    return `
+      <div class="review-item${isPay2Play ? " review-p2p" : ""}">
+        <div class="review-top">
+          <div class="reviewer-name">${displayName}${anon ? ' <span class="anon-tag">anonymous</span>' : ""}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${payLabel ? `<span class="pay-type-tag${isPay2Play ? " pay-type-p2p" : ""}">${payLabel}${r.deal_amount != null ? ` · $${r.deal_amount}` : ""}</span>` : ""}
             <div class="review-date">${displayDate}</div>
           </div>
-          ${(!anon && r.show_name) ? `<div class="review-show">${escHtml(r.show_name)}</div>` : ""}
-          <div class="review-body">${escHtml(r.body)}</div>
-          <div class="review-mini-scores">
-            <div class="mini-score">Sound <span>${r.rating_sound}/5</span></div>
-            <div class="mini-score">Load-in <span>${r.rating_load_in}/5</span></div>
-            <div class="mini-score">Green Rm <span>${r.rating_green_room}/5</span></div>
-            <div class="mini-score">Promo <span>${r.rating_promo}/5</span></div>
-            <div class="mini-score">Pay <span>${r.rating_pay}/5</span></div>
-            <div class="mini-score">Play Again <span>${r.rating_again}/5</span></div>
-          </div>
-        </div>`;
-    }).join("");
-  }
+        </div>
+        ${(!anon && r.show_name) ? `<div class="review-show">${escHtml(r.show_name)}</div>` : ""}
+        <div class="review-body">${escHtml(r.body)}</div>
+        <div class="review-mini-scores">
+          <div class="mini-score">Sound <span>${r.rating_sound}/5</span></div>
+          <div class="mini-score">Load-in <span>${r.rating_load_in}/5</span></div>
+          <div class="mini-score">Green Rm <span>${r.rating_green_room}/5</span></div>
+          <div class="mini-score">Promo <span>${r.rating_promo}/5</span></div>
+          <div class="mini-score">Pay <span>${r.rating_pay}/5</span></div>
+          <div class="mini-score">Play Again <span>${r.rating_again}/5</span></div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function setDetailPaymentFilter(filter) {
+  state.detailPaymentFilter = filter;
+  renderDetailReviews();
 }
 
 // ─── REVIEW FORM ─────────────────────────────────────────────
@@ -368,13 +454,18 @@ async function handleSubmitReview() {
   const showName   = document.getElementById("formShow").value.trim();
   const showDate   = document.getElementById("formDate").value;
   const body       = document.getElementById("formBody").value.trim();
-  const proofLink  = document.getElementById("formLink").value.trim();
-  const proofNotes = document.getElementById("formProof").value.trim();
-  const anonymous  = document.getElementById("formAnonymous").checked;
-  const sr         = state.starRatings;
+  const proofLink   = document.getElementById("formLink").value.trim();
+  const proofNotes  = document.getElementById("formProof").value.trim();
+  const anonymous   = document.getElementById("formAnonymous").checked;
+  const paymentType = document.getElementById("formPaymentType").value;
+  const dealAmount  = document.getElementById("formDealAmount").value;
+  const sr          = state.starRatings;
 
   if (!venueId || !artistName || !showDate || !body) {
     showToast("Please fill in all required fields."); return;
+  }
+  if (!paymentType) {
+    showToast("Please select how you were compensated."); return;
   }
   if (Object.values(sr).some(v => v === 0)) {
     showToast("Please rate all 6 categories."); return;
@@ -384,6 +475,7 @@ async function handleSubmitReview() {
   try {
     await submitReview({
       venueId, artistName, showName, showDate, body, proofLink, proofNotes, anonymous,
+      paymentType, dealAmount,
       sound: sr.sound, loadIn: sr.load, greenRoom: sr.green,
       promo: sr.promo, pay: sr.pay, again: sr.again,
     });
@@ -404,6 +496,12 @@ function resetReviewForm() {
   });
   const anonBox = document.getElementById("formAnonymous");
   if (anonBox) anonBox.checked = false;
+  const payType = document.getElementById("formPaymentType");
+  if (payType) payType.value = "";
+  const dealAmt = document.getElementById("formDealAmount");
+  if (dealAmt) dealAmt.value = "";
+  const dealField = document.getElementById("dealAmountField");
+  if (dealField) dealField.style.display = "none";
   Object.keys(state.starRatings).forEach(k => {
     state.starRatings[k] = 0;
     highlightStars(k, 0);
@@ -640,8 +738,8 @@ function renderAdminQueue() {
           </div>
           <div class="pending-info">
             <strong>Show date:</strong> ${p.show_date} &nbsp;·&nbsp;
-            <strong>Sound:</strong> ${p.rating_sound}/5 &nbsp;·&nbsp;
-            <strong>Pay:</strong> ${p.rating_pay}/5 &nbsp;·&nbsp;
+            <strong>Payment:</strong> ${p.payment_type ? `${PAYMENT_LABELS[p.payment_type]}${p.deal_amount != null ? ` ($${p.deal_amount})` : ""}` : "not specified"} &nbsp;·&nbsp;
+            <strong>Pay★:</strong> ${p.rating_pay}/5 &nbsp;·&nbsp;
             <strong>Est. overall:</strong> ${estOverall.toFixed(1)}/5
           </div>
           <div class="pending-body">${escHtml(p.body)}</div>
@@ -785,6 +883,26 @@ function setNameFilter(val) {
   renderVenueList();
 }
 
+// ─── PAYMENT TOGGLE ──────────────────────────────────────────
+function toggleDealAmount() {
+  const type  = document.getElementById("formPaymentType").value;
+  const field = document.getElementById("dealAmountField");
+  const label = document.getElementById("dealAmountLabel");
+  if (type === "paid") {
+    field.style.display = "block";
+    label.textContent = "Amount received ($) — optional";
+  } else if (type === "door_deal") {
+    field.style.display = "block";
+    label.textContent = "Amount received ($) — optional";
+  } else if (type === "pay_to_play") {
+    field.style.display = "block";
+    label.textContent = "Amount paid ($) — optional";
+  } else {
+    field.style.display = "none";
+    document.getElementById("formDealAmount").value = "";
+  }
+}
+
 // ─── SUGGEST VENUE FORM ──────────────────────────────────────
 function openSuggestForm() {
   if (!state.user) {
@@ -918,6 +1036,8 @@ window.showAuthModal = showAuthModal;
 window.handleAuthSubmit = handleAuthSubmit;
 window.handleSignOut = handleSignOut;
 window.handleModerate = handleModerate;
+window.toggleDealAmount = toggleDealAmount;
+window.setDetailPaymentFilter = setDetailPaymentFilter;
 window.openSuggestForm = openSuggestForm;
 window.handleSubmitSuggestion = handleSubmitSuggestion;
 window.closeSuggest = closeSuggest;
