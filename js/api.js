@@ -230,6 +230,96 @@ export async function getMyReviews() {
   return data;
 }
 
+// ─── VENUE SUGGESTIONS ───────────────────────────────────────
+
+/**
+ * Artist: submit a venue suggestion.
+ */
+export async function submitVenueSuggestion(data) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("You must be signed in to suggest a venue.");
+  const { data: row, error } = await supabase.from("venue_suggestions").insert({
+    name:         data.name,
+    type:         data.type || null,
+    address:      data.address || null,
+    city:         data.city,
+    country:      data.country || null,
+    capacity:     data.capacity ? parseInt(data.capacity) : null,
+    website:      data.website || null,
+    notes:        data.notes || null,
+    submitted_by: user.id,
+  }).select().single();
+  if (error) throw error;
+  return row;
+}
+
+/**
+ * Admin: fetch all pending venue suggestions.
+ */
+export async function getPendingVenueSuggestions() {
+  const { data, error } = await supabase
+    .from("venue_suggestions")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Admin: approve a suggestion — inserts into venues and marks suggestion approved.
+ */
+export async function approveVenueSuggestion(suggestionId, venueData) {
+  const user = await getCurrentUser();
+  const { data: venue, error: venueError } = await supabase
+    .from("venues")
+    .insert({
+      name:     venueData.name,
+      type:     venueData.type || null,
+      address:  venueData.address || null,
+      city:     venueData.city,
+      country:  venueData.country || null,
+      capacity: venueData.capacity ? parseInt(venueData.capacity) : null,
+      lat:      parseFloat(venueData.lat),
+      lng:      parseFloat(venueData.lng),
+      website:  venueData.website || null,
+      added_by: user?.id,
+    })
+    .select()
+    .single();
+  if (venueError) throw venueError;
+
+  const { error: suggError } = await supabase
+    .from("venue_suggestions")
+    .update({
+      status:       "approved",
+      admin_note:   venueData.adminNote || null,
+      reviewed_by:  user?.id,
+      reviewed_at:  new Date().toISOString(),
+    })
+    .eq("id", suggestionId);
+  if (suggError) throw suggError;
+
+  return venue;
+}
+
+/**
+ * Admin: reject a venue suggestion.
+ */
+export async function rejectVenueSuggestion(suggestionId, adminNote = null) {
+  const user = await getCurrentUser();
+  const { error } = await supabase
+    .from("venue_suggestions")
+    .update({
+      status:      "rejected",
+      admin_note:  adminNote,
+      reviewed_by: user?.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", suggestionId);
+  if (error) throw error;
+}
+
 // ─── REALTIME ────────────────────────────────────────────────
 
 /**

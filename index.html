@@ -42,6 +42,7 @@
     <div class="hero-actions">
       <button class="btn-primary" onclick="document.getElementById('citySearch').focus(); document.querySelector('.search-section').scrollIntoView()">Browse Venues</button>
       <button class="btn-secondary" onclick="openReviewForm(null)">Submit a Review</button>
+      <button class="btn-secondary" onclick="openSuggestForm()">Suggest a Venue</button>
     </div>
   </div>
 
@@ -123,11 +124,23 @@
 <div class="page" id="page-admin">
   <div class="admin-page">
     <div class="admin-header">
-      <h1>Admin — Review Queue</h1>
-      <p>Verify submissions before they go live. Check proof of performance, then approve, reject, or request more info.</p>
+      <h1>Admin</h1>
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="tabReviews" onclick="showAdminTab('reviews')">Review Queue</button>
+        <button class="admin-tab" id="tabSuggestions" onclick="showAdminTab('suggestions')">Venue Suggestions <span id="suggestionCount"></span></button>
+      </div>
     </div>
-    <div id="pendingQueue">
-      <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading queue…</div>
+    <div id="adminTabReviews">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">Verify submissions before they go live. Check proof of performance, then approve, reject, or request more info.</p>
+      <div id="pendingQueue">
+        <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading queue…</div>
+      </div>
+    </div>
+    <div id="adminTabSuggestions" style="display:none;">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">Venues suggested by artists that aren't on the map yet. Verify details and add to the map.</p>
+      <div id="venueSuggestionsQueue">
+        <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading suggestions…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -245,6 +258,139 @@
       <div class="auth-switch" id="authSwitch">
         New here? <a href="#" onclick="showAuthModal('signup')">Create account</a>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SUGGEST A VENUE FORM
+══════════════════════════════════════ -->
+<div class="form-overlay" id="suggestOverlay" onclick="closeSuggest(event)">
+  <div class="form-panel" onclick="event.stopPropagation()">
+    <div class="form-header">
+      <h2>Suggest a Venue</h2>
+      <button class="form-close" onclick="closeSuggestDirect()">✕</button>
+    </div>
+    <div class="form-body">
+      <div class="form-note">
+        Know a venue that should be on Greenroom? Submit it here and our team will verify and add it to the map.
+      </div>
+      <div class="field">
+        <label>Venue Name *</label>
+        <input type="text" id="svName" placeholder="e.g. The Horseshoe Tavern">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>Type</label>
+          <select id="svType">
+            <option value="">Select type…</option>
+            <option value="bar">Bar / Pub</option>
+            <option value="club">Club / Nightclub</option>
+            <option value="theatre">Theatre</option>
+            <option value="arts_centre">Arts Centre</option>
+            <option value="festival">Festival</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Capacity</label>
+          <input type="number" id="svCapacity" placeholder="e.g. 300">
+        </div>
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="svAddress" placeholder="Street address">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>City *</label>
+          <input type="text" id="svCity" placeholder="e.g. Toronto">
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <input type="text" id="svCountry" placeholder="e.g. Canada">
+        </div>
+      </div>
+      <div class="field">
+        <label>Website</label>
+        <input type="url" id="svWebsite" placeholder="https://…">
+      </div>
+      <div class="field">
+        <label>Additional Notes</label>
+        <textarea id="svNotes" placeholder="Anything else we should know — booking contact, social links, etc."></textarea>
+      </div>
+      <button class="form-submit" onclick="handleSubmitSuggestion()">Submit Suggestion →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ADMIN: CONFIRM & ADD VENUE
+══════════════════════════════════════ -->
+<div class="form-overlay" id="confirmVenueOverlay" onclick="closeConfirmVenue(event)">
+  <div class="form-panel" onclick="event.stopPropagation()">
+    <div class="form-header">
+      <h2>Add Venue to Map</h2>
+      <button class="form-close" onclick="closeConfirmVenueDirect()">✕</button>
+    </div>
+    <div class="form-body">
+      <input type="hidden" id="cvSuggestionId">
+      <div class="form-note" style="background:rgba(74,124,74,0.08);border-color:rgba(74,124,74,0.25);color:var(--green-light);">
+        Review and confirm details before adding to the map. Lat/lng is required — use the geocode button to auto-fill.
+      </div>
+      <div class="field">
+        <label>Venue Name *</label>
+        <input type="text" id="cvName">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>Type</label>
+          <select id="cvType">
+            <option value="bar">Bar / Pub</option>
+            <option value="club">Club / Nightclub</option>
+            <option value="theatre">Theatre</option>
+            <option value="arts_centre">Arts Centre</option>
+            <option value="festival">Festival</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Capacity</label>
+          <input type="number" id="cvCapacity" placeholder="Optional">
+        </div>
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="cvAddress">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>City *</label>
+          <input type="text" id="cvCity">
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <input type="text" id="cvCountry">
+        </div>
+      </div>
+      <div class="field">
+        <label>Website</label>
+        <input type="url" id="cvWebsite">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="field">
+          <label>Latitude *</label>
+          <input type="number" step="any" id="cvLat" placeholder="e.g. 43.6532">
+        </div>
+        <div class="field">
+          <label>Longitude *</label>
+          <input type="number" step="any" id="cvLng" placeholder="e.g. -79.3832">
+        </div>
+      </div>
+      <button type="button" class="btn-geocode" onclick="geocodeConfirmVenue()">↻ Auto-geocode from address / city</button>
+      <div class="field" style="margin-top:1rem;">
+        <label>Admin Note (optional)</label>
+        <input type="text" id="cvAdminNote" placeholder="Internal note…">
+      </div>
+      <button class="form-submit" onclick="handleConfirmVenue()">Add to Map →</button>
     </div>
   </div>
 </div>

@@ -366,6 +366,32 @@ nav {
 .verification-info ul { padding-left: 1.2rem; }
 .verification-info li { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; line-height: 1.5; }
 
+/* ── ADMIN TABS ── */
+.admin-tabs { display: flex; gap: 4px; margin-top: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.admin-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--text-muted); cursor: pointer; padding: 8px 16px 10px; transition: color 0.15s;
+  margin-bottom: -1px;
+}
+.admin-tab:hover { color: var(--text); }
+.admin-tab.active { color: var(--green); border-bottom-color: var(--amber); font-weight: 600; }
+#suggestionCount { font-size: 12px; color: var(--amber); font-family: 'DM Mono', monospace; margin-left: 2px; }
+
+/* ── SUGGESTION BADGE ── */
+.suggestion-badge-label {
+  background: rgba(56,104,204,0.08); color: #2456a4; border: 1px solid rgba(56,104,204,0.25);
+}
+
+/* ── GEOCODE BUTTON ── */
+.btn-geocode {
+  width: 100%; background: rgba(74,124,74,0.08); color: var(--green-light);
+  border: 1px solid rgba(74,124,74,0.3); border-radius: 6px;
+  padding: 9px 14px; font-family: 'Instrument Sans', sans-serif;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s; margin-bottom: 0;
+}
+.btn-geocode:hover { background: rgba(74,124,74,0.15); }
+
 /* ── TOAST ── */
 .toast {
   position: fixed; bottom: 24px; left: 50%;

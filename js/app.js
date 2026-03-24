@@ -7,6 +7,7 @@ import {
   getVenueStats, getVenueDetail, searchVenues, importOsmVenues, upsertVenue,
   submitReview, getPendingReviews, moderateReview, getMyReviews,
   subscribeToVenueReviews, subscribeToPendingReviews,
+  submitVenueSuggestion, getPendingVenueSuggestions, approveVenueSuggestion, rejectVenueSuggestion,
 } from "./api.js";
 
 // ─── STATE ───────────────────────────────────────────────────
@@ -20,6 +21,7 @@ let state = {
   mapBounds: null,
   loading: false,
   pendingReviews: [],
+  pendingSuggestions: [],
   starRatings: { sound: 0, load: 0, green: 0, promo: 0, pay: 0, again: 0 },
   osmImporting: false,
 };
@@ -442,6 +444,163 @@ async function loadAdminQueue() {
   }
 }
 
+async function loadVenueSuggestions() {
+  try {
+    state.pendingSuggestions = await getPendingVenueSuggestions();
+    renderVenueSuggestionsQueue();
+  } catch (err) {
+    console.error("Suggestions error:", err);
+  }
+}
+
+function renderVenueSuggestionsQueue() {
+  const queue = document.getElementById("venueSuggestionsQueue");
+  if (!queue) return;
+
+  // Update tab badge
+  const badge = document.getElementById("suggestionCount");
+  if (badge) {
+    badge.textContent = state.pendingSuggestions.length ? `(${state.pendingSuggestions.length})` : "";
+  }
+
+  if (!state.pendingSuggestions.length) {
+    queue.innerHTML = `<div style="padding:3rem;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:32px;margin-bottom:8px;">✓</div>
+      <div style="font-size:16px;font-weight:500;color:var(--green);">No pending suggestions</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">All venue suggestions have been reviewed.</div>
+    </div>`;
+    return;
+  }
+
+  queue.innerHTML = state.pendingSuggestions.map(s => `
+    <div class="pending-card" id="suggestion-${s.id}">
+      <div class="pending-top">
+        <div>
+          <div class="pending-venue">${escHtml(s.name)}</div>
+          <div style="font-size:13px;color:var(--text-muted);">${escHtml(s.city || "")}${s.country ? `, ${escHtml(s.country)}` : ""}${s.type ? ` · ${escHtml(s.type)}` : ""}</div>
+        </div>
+        <div>
+          <div class="pending-badge suggestion-badge-label">Suggestion</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace;">${s.created_at?.split("T")[0]}</div>
+        </div>
+      </div>
+      <div class="pending-info">
+        ${s.address ? `<strong>Address:</strong> ${escHtml(s.address)} &nbsp;·&nbsp; ` : ""}
+        ${s.capacity ? `<strong>Capacity:</strong> ${s.capacity} &nbsp;·&nbsp; ` : ""}
+        ${s.website ? `<strong>Website:</strong> <a href="${escHtml(s.website)}" target="_blank" rel="noopener" style="color:var(--green-light);">${escHtml(s.website)}</a>` : ""}
+      </div>
+      ${s.notes ? `<div class="pending-body">${escHtml(s.notes)}</div>` : ""}
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);display:block;margin-bottom:4px;">Rejection note (if rejecting)</label>
+        <input type="text" id="sugg-note-${s.id}" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-size:13px;font-family:inherit;" placeholder="Reason for rejection…">
+      </div>
+      <div class="pending-actions">
+        <button class="btn-approve" onclick="handleApproveSuggestion('${s.id}')">✓ Review &amp; Add to Map</button>
+        <button class="btn-reject" onclick="handleRejectSuggestion('${s.id}')">✕ Reject</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function handleApproveSuggestion(id) {
+  const s = state.pendingSuggestions.find(x => x.id === id);
+  if (!s) return;
+
+  // Pre-fill confirm modal
+  document.getElementById("cvSuggestionId").value = id;
+  document.getElementById("cvName").value = s.name || "";
+  document.getElementById("cvType").value = s.type || "bar";
+  document.getElementById("cvAddress").value = s.address || "";
+  document.getElementById("cvCity").value = s.city || "";
+  document.getElementById("cvCountry").value = s.country || "";
+  document.getElementById("cvCapacity").value = s.capacity || "";
+  document.getElementById("cvWebsite").value = s.website || "";
+  document.getElementById("cvLat").value = "";
+  document.getElementById("cvLng").value = "";
+  document.getElementById("cvAdminNote").value = "";
+
+  document.getElementById("confirmVenueOverlay").classList.add("open");
+}
+
+async function handleRejectSuggestion(id) {
+  const note = document.getElementById(`sugg-note-${id}`)?.value || null;
+  try {
+    await rejectVenueSuggestion(id, note);
+    state.pendingSuggestions = state.pendingSuggestions.filter(s => s.id !== id);
+    renderVenueSuggestionsQueue();
+    showToast("Suggestion rejected.");
+  } catch (err) {
+    showToast("Error: " + err.message);
+  }
+}
+
+async function geocodeConfirmVenue() {
+  const address = document.getElementById("cvAddress").value.trim();
+  const city    = document.getElementById("cvCity").value.trim();
+  const country = document.getElementById("cvCountry").value.trim();
+  const query   = [address, city, country].filter(Boolean).join(", ");
+  if (!query) { showToast("Enter an address or city first."); return; }
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+      { headers: { "User-Agent": "Greenroom/1.0" } }
+    );
+    const data = await res.json();
+    if (!data.length) { showToast("Location not found. Try a more specific address."); return; }
+    document.getElementById("cvLat").value = parseFloat(data[0].lat).toFixed(6);
+    document.getElementById("cvLng").value = parseFloat(data[0].lon).toFixed(6);
+    showToast("Location geocoded!");
+  } catch (err) {
+    showToast("Geocoding failed: " + err.message);
+  }
+}
+
+async function handleConfirmVenue() {
+  const suggestionId = document.getElementById("cvSuggestionId").value;
+  const lat = document.getElementById("cvLat").value;
+  const lng = document.getElementById("cvLng").value;
+  const name = document.getElementById("cvName").value.trim();
+  const city = document.getElementById("cvCity").value.trim();
+
+  if (!name || !city) { showToast("Name and city are required."); return; }
+  if (!lat || !lng)   { showToast("Lat/lng required — use the geocode button."); return; }
+
+  setLoading(true);
+  try {
+    await approveVenueSuggestion(suggestionId, {
+      name,
+      type:      document.getElementById("cvType").value,
+      address:   document.getElementById("cvAddress").value.trim(),
+      city,
+      country:   document.getElementById("cvCountry").value.trim(),
+      capacity:  document.getElementById("cvCapacity").value,
+      website:   document.getElementById("cvWebsite").value.trim(),
+      lat,
+      lng,
+      adminNote: document.getElementById("cvAdminNote").value.trim(),
+    });
+    closeConfirmVenueDirect();
+    state.pendingSuggestions = state.pendingSuggestions.filter(s => s.id !== suggestionId);
+    renderVenueSuggestionsQueue();
+    await loadVenues({ bbox: state.mapBounds });
+    renderVenueList();
+    renderMarkers();
+    showToast("Venue added to the map!");
+  } catch (err) {
+    showToast("Error adding venue: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function showAdminTab(tab) {
+  document.getElementById("adminTabReviews").style.display    = tab === "reviews"     ? "block" : "none";
+  document.getElementById("adminTabSuggestions").style.display = tab === "suggestions" ? "block" : "none";
+  document.getElementById("tabReviews").classList.toggle("active",     tab === "reviews");
+  document.getElementById("tabSuggestions").classList.toggle("active", tab === "suggestions");
+}
+
 function renderAdminQueue() {
   const queue = document.getElementById("pendingQueue");
   if (!queue) return;
@@ -562,7 +721,7 @@ function showPage(page) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.getElementById("page-" + page)?.classList.add("active");
   if (page === "discover") setTimeout(() => map?.invalidateSize(), 50);
-  if (page === "admin" && state.adminMode) loadAdminQueue();
+  if (page === "admin" && state.adminMode) { loadAdminQueue(); loadVenueSuggestions(); }
   if (page === "myreviews") renderMyReviews();
 }
 
@@ -618,6 +777,52 @@ function setNameFilter(val) {
   renderVenueList();
 }
 
+// ─── SUGGEST VENUE FORM ──────────────────────────────────────
+function openSuggestForm() {
+  if (!state.user) {
+    showAuthModal("signin");
+    showToast("Sign in first to suggest a venue.");
+    return;
+  }
+  document.getElementById("suggestOverlay").classList.add("open");
+}
+
+async function handleSubmitSuggestion() {
+  const name = document.getElementById("svName").value.trim();
+  const city = document.getElementById("svCity").value.trim();
+  if (!name || !city) { showToast("Venue name and city are required."); return; }
+
+  setLoading(true);
+  try {
+    await submitVenueSuggestion({
+      name,
+      type:     document.getElementById("svType").value,
+      address:  document.getElementById("svAddress").value.trim(),
+      city,
+      country:  document.getElementById("svCountry").value.trim(),
+      capacity: document.getElementById("svCapacity").value,
+      website:  document.getElementById("svWebsite").value.trim(),
+      notes:    document.getElementById("svNotes").value.trim(),
+    });
+    closeSuggestDirect();
+    resetSuggestForm();
+    showToast("Thanks! We'll review your suggestion soon.");
+  } catch (err) {
+    showToast("Error submitting suggestion: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function resetSuggestForm() {
+  ["svName","svAddress","svCity","svCountry","svWebsite","svNotes","svCapacity"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const type = document.getElementById("svType");
+  if (type) type.value = "";
+}
+
 // ─── OVERLAYS ────────────────────────────────────────────────
 function closeDetail(e) {
   if (e.target === document.getElementById("detailOverlay")) closeDetailDirect();
@@ -637,6 +842,18 @@ function closeAuth(e) {
 }
 function closeAuthDirect() {
   document.getElementById("authModal").classList.remove("open");
+}
+function closeSuggest(e) {
+  if (e.target === document.getElementById("suggestOverlay")) closeSuggestDirect();
+}
+function closeSuggestDirect() {
+  document.getElementById("suggestOverlay").classList.remove("open");
+}
+function closeConfirmVenue(e) {
+  if (e.target === document.getElementById("confirmVenueOverlay")) closeConfirmVenueDirect();
+}
+function closeConfirmVenueDirect() {
+  document.getElementById("confirmVenueOverlay").classList.remove("open");
 }
 
 // ─── UTILS ───────────────────────────────────────────────────
@@ -687,3 +904,14 @@ window.showAuthModal = showAuthModal;
 window.handleAuthSubmit = handleAuthSubmit;
 window.handleSignOut = handleSignOut;
 window.handleModerate = handleModerate;
+window.openSuggestForm = openSuggestForm;
+window.handleSubmitSuggestion = handleSubmitSuggestion;
+window.closeSuggest = closeSuggest;
+window.closeSuggestDirect = closeSuggestDirect;
+window.showAdminTab = showAdminTab;
+window.handleApproveSuggestion = handleApproveSuggestion;
+window.handleRejectSuggestion = handleRejectSuggestion;
+window.geocodeConfirmVenue = geocodeConfirmVenue;
+window.handleConfirmVenue = handleConfirmVenue;
+window.closeConfirmVenue = closeConfirmVenue;
+window.closeConfirmVenueDirect = closeConfirmVenueDirect;
