@@ -52,6 +52,16 @@ export async function getProfile(userId) {
   return data;
 }
 
+export async function getPublicProfile(userId) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, artist_name, is_verified, created_at")
+    .eq("id", userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function isAdmin(userId) {
   if (!userId) return false;
   const { data } = await supabase

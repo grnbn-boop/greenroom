@@ -3,7 +3,7 @@
 // Works as a pure ES module — no build step needed for GitHub Pages.
 
 import {
-  supabase, signIn, signUp, signOut, getCurrentUser, getProfile, isAdmin,
+  supabase, signIn, signUp, signOut, getCurrentUser, getProfile, isAdmin, getPublicProfile,
   getVenueStats, getVenueDetail, searchVenues, importOsmVenues, upsertVenue,
   submitReview, getPendingReviews, moderateReview, getMyReviews,
   subscribeToVenueReviews, subscribeToPendingReviews,
@@ -70,7 +70,7 @@ function renderAuthUI() {
   if (!authArea) return;
   if (state.user) {
     authArea.innerHTML = `
-      <span style="font-size:13px; color:rgba(245,240,232,0.6);">${state.profile?.artist_name || state.profile?.display_name || state.user.email}</span>
+      <span class="nav-profile-name" onclick="openProfile('${state.user.id}')">${state.profile?.artist_name || state.profile?.display_name || state.user.email}</span>
       ${state.adminMode ? `<button class="admin-badge" onclick="showPage('admin')">Admin</button>` : ""}
       <button class="nav-pill" onclick="openReviewForm(null)">+ Submit Review</button>
       <button class="nav-btn" onclick="handleSignOut()">Sign out</button>
@@ -404,10 +404,13 @@ function renderDetailReviews() {
     const displayDate = anon ? monthYear(r.show_date) : r.show_date;
     const payLabel    = r.payment_type ? PAYMENT_LABELS[r.payment_type] : null;
     const isPay2Play  = r.payment_type === "pay_to_play";
+    const nameEl = anon
+      ? `${displayName} <span class="anon-tag">anonymous</span>`
+      : `<span class="reviewer-name-link" onclick="openProfile('${r.author_id}')">${displayName}</span>`;
     return `
       <div class="review-item${isPay2Play ? " review-p2p" : ""}">
         <div class="review-top">
-          <div class="reviewer-name">${displayName}${anon ? ' <span class="anon-tag">anonymous</span>' : ""}</div>
+          <div class="reviewer-name">${nameEl}</div>
           <div style="display:flex;align-items:center;gap:6px;">
             ${payLabel ? `<span class="pay-type-tag${isPay2Play ? " pay-type-p2p" : ""}">${payLabel}${r.deal_amount != null ? ` · $${r.deal_amount}` : ""}</span>` : ""}
             <div class="review-date">${displayDate}</div>
@@ -985,6 +988,63 @@ function closeConfirmVenueDirect() {
   document.getElementById("confirmVenueOverlay").classList.remove("open");
 }
 
+// ─── ARTIST PROFILE OVERLAY ──────────────────────────────────
+async function openProfile(userId) {
+  if (!userId) return;
+  const overlay = document.getElementById("profileOverlay");
+  document.getElementById("profileName").textContent = "Loading…";
+  document.getElementById("profileMeta").textContent = "";
+  document.getElementById("profileBody").innerHTML = "";
+  overlay.classList.add("open");
+
+  try {
+    const p = await getPublicProfile(userId);
+    const name = p.artist_name || p.display_name || "Artist";
+
+    document.getElementById("profileName").innerHTML =
+      escHtml(name) +
+      (p.is_verified ? ' <span class="verified-badge">✓ Verified</span>' : "");
+
+    const joinedDate = new Date(p.created_at);
+    const memberSince = joinedDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const memberFor   = timeSince(joinedDate);
+
+    document.getElementById("profileMeta").textContent = "Artist";
+    document.getElementById("profileBody").innerHTML = `
+      <div class="profile-stat">
+        <div class="profile-stat-label">Member since</div>
+        <div class="profile-stat-value">${memberSince}</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Time on Greenroom</div>
+        <div class="profile-stat-value">${memberFor}</div>
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById("profileBody").innerHTML =
+      `<p style="color:var(--text-muted);font-size:14px;">Could not load profile.</p>`;
+  }
+}
+
+function timeSince(date) {
+  const now  = new Date();
+  const diff = now - date;
+  const days   = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30.44);
+  const years  = Math.floor(days / 365.25);
+  if (years >= 1)   return years  === 1 ? "1 year"   : `${years} years`;
+  if (months >= 1)  return months === 1 ? "1 month"  : `${months} months`;
+  if (days >= 1)    return days   === 1 ? "1 day"    : `${days} days`;
+  return "Today";
+}
+
+function closeProfile(e) {
+  if (e.target === document.getElementById("profileOverlay")) closeProfileDirect();
+}
+function closeProfileDirect() {
+  document.getElementById("profileOverlay").classList.remove("open");
+}
+
 // ─── UTILS ───────────────────────────────────────────────────
 function escHtml(str) {
   if (!str) return "";
@@ -1052,3 +1112,6 @@ window.geocodeConfirmVenue = geocodeConfirmVenue;
 window.handleConfirmVenue = handleConfirmVenue;
 window.closeConfirmVenue = closeConfirmVenue;
 window.closeConfirmVenueDirect = closeConfirmVenueDirect;
+window.openProfile = openProfile;
+window.closeProfile = closeProfile;
+window.closeProfileDirect = closeProfileDirect;

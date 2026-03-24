@@ -429,6 +429,20 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     ARTIST PROFILE OVERLAY
+══════════════════════════════════════ -->
+<div class="detail-overlay" id="profileOverlay" onclick="closeProfile(event)">
+  <div class="detail-panel" style="max-width:480px;">
+    <div class="detail-header">
+      <button class="detail-close" onclick="closeProfileDirect()">✕</button>
+      <div id="profileName" class="detail-title"></div>
+      <div id="profileMeta" class="detail-meta"></div>
+    </div>
+    <div id="profileBody" style="padding:1.5rem;"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 

@@ -67,6 +67,7 @@ greenroom/
 | bio | text | |
 | website | text | |
 | is_admin | boolean | DEFAULT false |
+| is_verified | boolean | DEFAULT false — admin-confirmed real artist; shown as "Verified" badge on public profile |
 | created_at | timestamptz | |
 
 Auto-created on signup via `handle_new_user()` trigger.
@@ -107,6 +108,9 @@ alter table reviews add column anonymous boolean default false;
 alter table reviews add column payment_type text check (payment_type in ('paid', 'door_deal', 'free', 'pay_to_play'));
 alter table reviews add column deal_amount numeric(10,2);
 alter table reviews add column stipulations text;
+
+-- Artist profile: verified badge
+alter table profiles add column is_verified boolean default false;
 ```
 
 ### View: venue_stats
