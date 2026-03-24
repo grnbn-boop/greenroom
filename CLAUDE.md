@@ -96,6 +96,18 @@ Auto-created on signup via `handle_new_user()` trigger.
 | reviewed_at | timestamptz | |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
+| anonymous | boolean | DEFAULT false — hides name, show name, rounds date to month/year publicly |
+| payment_type | text | paid \| door_deal \| free \| pay_to_play |
+| deal_amount | numeric(10,2) | optional — amount received (paid/door) or paid (pay_to_play) |
+| stipulations | text | optional — venue conditions e.g. bar minimums, ticket quotas, merch cuts |
+
+**DB migration (run in Supabase SQL Editor):**
+```sql
+alter table reviews add column anonymous boolean default false;
+alter table reviews add column payment_type text check (payment_type in ('paid', 'door_deal', 'free', 'pay_to_play'));
+alter table reviews add column deal_amount numeric(10,2);
+alter table reviews add column stipulations text;
+```
 
 ### View: venue_stats
 Aggregates approved reviews per venue:
@@ -236,20 +248,39 @@ All pages live in `index.html` as `<div class="page">` blocks, shown/hidden via 
 - Map markers: dark green circle with review count; gray if no reviews yet
 - Review categories: Sound & PA, Load-in & Backline, Green Room, Promoter Comms, Pay/Deal, Would Play Again
 
+## Review Privacy / Anonymity
+- Artists can opt in to post anonymously via checkbox on the review form
+- When anonymous: public view shows "Verified Artist" instead of name, hides show name, rounds date to "Month YYYY"
+- Admin queue always shows full real details (needed for verification)
+- "My Reviews" page shows the artist's own real info regardless
+- `proof_link` and `proof_notes` are **never shown publicly** — admin/verification only
+
+## Payment & Deal Transparency
+- `payment_type` field: paid / door deal / free / pay to play
+- `deal_amount` field: optional dollar figure (amount received or paid)
+- `stipulations` field: free text for venue conditions (bar minimums, ticket quotas, merch cuts, etc.)
+- Venue detail overlay shows:
+  - Payment type filter pills (All / Paid / Door Deal / Free / Pay to Play) — only shows types present in the data
+  - Deal stats row: avg paid fee, avg door deal payout, pay-to-play warning count
+- Pay/Deal star rating (1–5) is kept alongside the numeric deal_amount for qualitative scoring
+- Admin queue shows payment type badge on each pending review
+
 ## Known Issues / Completed Fixes
 1. ✅ `npm install -g supabase` is deprecated — use Scoop (Windows) or Homebrew (Mac/Linux)
 2. ✅ Files were initially uploaded flat (no subfolders) — fixed by reorganizing into `js/`, `css/`, `supabase/` folders
 3. ✅ `venue_stats` view returned 401 — fixed by running explicit grants for anon and authenticated roles
 4. ✅ "Database error saving new user" — fixed by adding `set search_path = public` to `handle_new_user()` trigger
-5. ✅ Email confirmation 404 — fixed by adding auth callback handler script in `index.html`
+5. ⚠️ Email confirmation 404 — auth callback handler added to `index.html` but issue still occurring in testing. Needs further investigation (Supabase redirect URL config vs GitHub Pages routing).
 6. ✅ Legacy anon key replaced with new `sb_publishable_...` key — works as drop-in replacement
 
 ## Things Not Yet Built / Next Steps
-- Artist account profile pages
-- Venue claim/response system (venues responding to reviews)
-- Email notifications to admin when new review submitted
-- Search autocomplete dropdown for venue name search
-- Mobile responsive improvements
-- Custom domain (currently on github.io subdomain)
-- Rate limiting on review submissions
-- Image upload for proof of performance
+- 🔲 Fix email confirmation 404 (user registers successfully but link gives 404)
+- 🔲 Suggest a venue flow — user submits a venue suggestion, admin reviews and approves it to the map
+- 🔲 Artist account profile pages
+- 🔲 Venue claim/response system (venues responding to reviews)
+- 🔲 Email notifications to admin when new review submitted
+- 🔲 Search autocomplete dropdown for venue name search
+- 🔲 Mobile responsive improvements
+- 🔲 Custom domain (currently on github.io subdomain)
+- 🔲 Rate limiting on review submissions
+- 🔲 Image upload for proof of performance
