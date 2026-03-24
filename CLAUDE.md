@@ -68,6 +68,7 @@ greenroom/
 | website | text | |
 | is_admin | boolean | DEFAULT false |
 | is_verified | boolean | DEFAULT false — admin-confirmed real artist; shown as "Verified" badge on public profile |
+| notify_on_review | boolean | DEFAULT false — opt-in email notification when a new review enters the queue |
 | created_at | timestamptz | |
 
 Auto-created on signup via `handle_new_user()` trigger.
@@ -111,6 +112,9 @@ alter table reviews add column stipulations text;
 
 -- Artist profile: verified badge
 alter table profiles add column is_verified boolean default false;
+
+-- Admin email notification opt-in
+alter table profiles add column notify_on_review boolean default false;
 ```
 
 ### View: venue_stats
@@ -160,6 +164,22 @@ export const SUPABASE_ANON = "sb_publishable_..."; // publishable key
 ```sql
 update profiles set is_admin = true where id = 'a5f7e38d-322e-4794-be10-8574db36e7a9';
 ```
+
+## Admin Email Notification Flow
+1. Admin enables the toggle ("Email me new reviews") on the Admin page — sets `notify_on_review = true` on their profile
+2. Artist submits a review → INSERT into `reviews` table
+3. Supabase Database Webhook fires → calls Edge Function `notify-review-submitted`
+4. Edge Function queries all admin profiles with `notify_on_review = true`, fetches their emails, sends via Resend API
+5. Pending count badge updates in real-time via existing `subscribeToPendingReviews` subscription
+
+**Setup (one-time):**
+- Create a [Resend](https://resend.com) account (free tier: 3,000 emails/month)
+- Get your API key and set it: `supabase secrets set RESEND_API_KEY=re_...`
+- Optionally set: `supabase secrets set NOTIFY_FROM_EMAIL="Greenroom <noreply@yourdomain.com>"`
+  - Without this, emails send from `onboarding@resend.dev` (fine for testing, requires domain for production)
+- Deploy: `supabase functions deploy notify-review-submitted`
+- In Supabase dashboard: Database > Webhooks > Create webhook
+  - Table: `reviews` | Events: `INSERT` | URL: `{project_url}/functions/v1/notify-review-submitted`
 
 ## OSM Venue Import Flow
 1. User types a city name in the search bar
@@ -282,7 +302,7 @@ All pages live in `index.html` as `<div class="page">` blocks, shown/hidden via 
 - 🔲 Suggest a venue flow — user submits a venue suggestion, admin reviews and approves it to the map
 - 🔲 Artist account profile pages
 - 🔲 Venue claim/response system (venues responding to reviews)
-- 🔲 Email notifications to admin when new review submitted
+- ✅ Email notifications to admin when new review submitted (opt-in toggle on Admin page; Edge Function notify-review-submitted + Resend; Database Webhook on reviews INSERT)
 - 🔲 Search autocomplete dropdown for venue name search
 - 🔲 Mobile responsive improvements
 - 🔲 Custom domain (currently on github.io subdomain)

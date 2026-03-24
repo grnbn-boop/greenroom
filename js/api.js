@@ -62,6 +62,16 @@ export async function getPublicProfile(userId) {
   return data;
 }
 
+export async function updateNotifyOnReview(value) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not signed in");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ notify_on_review: value })
+    .eq("id", user.id);
+  if (error) throw error;
+}
+
 export async function isAdmin(userId) {
   if (!userId) return false;
   const { data } = await supabase

@@ -124,9 +124,12 @@
 <div class="page" id="page-admin">
   <div class="admin-page">
     <div class="admin-header">
-      <h1>Admin</h1>
+      <div class="admin-header-top">
+        <h1>Admin</h1>
+        <div id="adminNotifyToggle"></div>
+      </div>
       <div class="admin-tabs">
-        <button class="admin-tab active" id="tabReviews" onclick="showAdminTab('reviews')">Review Queue</button>
+        <button class="admin-tab active" id="tabReviews" onclick="showAdminTab('reviews')">Review Queue <span id="reviewQueueBadge" class="queue-badge" style="display:none;"></span></button>
         <button class="admin-tab" id="tabSuggestions" onclick="showAdminTab('suggestions')">Venue Suggestions <span id="suggestionCount"></span></button>
       </div>
     </div>

@@ -4,6 +4,7 @@
 
 import {
   supabase, signIn, signUp, signOut, getCurrentUser, getProfile, isAdmin, getPublicProfile,
+  updateNotifyOnReview,
   getVenueStats, getVenueDetail, searchVenues, importOsmVenues, upsertVenue,
   submitReview, getPendingReviews, moderateReview, getMyReviews,
   subscribeToVenueReviews, subscribeToPendingReviews,
@@ -71,7 +72,7 @@ function renderAuthUI() {
   if (state.user) {
     authArea.innerHTML = `
       <span class="nav-profile-name" onclick="openProfile('${state.user.id}')">${state.profile?.artist_name || state.profile?.display_name || state.user.email}</span>
-      ${state.adminMode ? `<button class="admin-badge" onclick="showPage('admin')">Admin</button>` : ""}
+      ${state.adminMode ? `<button class="admin-badge" onclick="showPage('admin')">Admin <span id="adminNavBadge" class="queue-badge" style="display:none;"></span></button>` : ""}
       <button class="nav-pill" onclick="openReviewForm(null)">+ Submit Review</button>
       <button class="nav-btn" onclick="handleSignOut()">Sign out</button>
     `;
@@ -711,9 +712,49 @@ function showAdminTab(tab) {
   document.getElementById("tabSuggestions").classList.toggle("active", tab === "suggestions");
 }
 
+function updateAdminBadge(count) {
+  [document.getElementById("adminNavBadge"), document.getElementById("reviewQueueBadge")].forEach(el => {
+    if (!el) return;
+    if (count > 0) {
+      el.textContent = count;
+      el.style.display = "inline-flex";
+    } else {
+      el.style.display = "none";
+    }
+  });
+}
+
+function renderAdminNotifyToggle() {
+  const container = document.getElementById("adminNotifyToggle");
+  if (!container || !state.profile) return;
+  const on = !!state.profile.notify_on_review;
+  container.innerHTML = `
+    <label class="notify-toggle" title="${on ? "Turn off email notifications" : "Turn on email notifications for new reviews"}">
+      <input type="checkbox" id="notifyToggleCheckbox" ${on ? "checked" : ""} onchange="handleNotifyToggle(this.checked)">
+      <span class="notify-toggle-track"><span class="notify-toggle-thumb"></span></span>
+      <span class="notify-toggle-label">Email me new reviews</span>
+    </label>
+  `;
+}
+
+async function handleNotifyToggle(value) {
+  try {
+    await updateNotifyOnReview(value);
+    state.profile = { ...state.profile, notify_on_review: value };
+    showToast(value ? "Email notifications on." : "Email notifications off.");
+  } catch (err) {
+    showToast("Error saving preference: " + err.message);
+    // Revert the checkbox
+    const cb = document.getElementById("notifyToggleCheckbox");
+    if (cb) cb.checked = !value;
+  }
+}
+
 function renderAdminQueue() {
   const queue = document.getElementById("pendingQueue");
   if (!queue) return;
+
+  updateAdminBadge(state.pendingReviews.length);
 
   if (!state.pendingReviews.length) {
     queue.innerHTML = `<div style="padding:3rem;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--border);">
@@ -833,7 +874,7 @@ function showPage(page) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.getElementById("page-" + page)?.classList.add("active");
   if (page === "discover") setTimeout(() => map?.invalidateSize(), 50);
-  if (page === "admin" && state.adminMode) { loadAdminQueue(); loadVenueSuggestions(); }
+  if (page === "admin" && state.adminMode) { loadAdminQueue(); loadVenueSuggestions(); renderAdminNotifyToggle(); }
   if (page === "myreviews") renderMyReviews();
 }
 
@@ -1115,3 +1156,4 @@ window.closeConfirmVenueDirect = closeConfirmVenueDirect;
 window.openProfile = openProfile;
 window.closeProfile = closeProfile;
 window.closeProfileDirect = closeProfileDirect;
+window.handleNotifyToggle = handleNotifyToggle;
