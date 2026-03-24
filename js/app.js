@@ -415,6 +415,7 @@ function renderDetailReviews() {
         </div>
         ${(!anon && r.show_name) ? `<div class="review-show">${escHtml(r.show_name)}</div>` : ""}
         <div class="review-body">${escHtml(r.body)}</div>
+        ${r.stipulations ? `<div class="review-stipulations"><span class="stipulations-label">⚑ Stipulations</span>${escHtml(r.stipulations)}</div>` : ""}
         <div class="review-mini-scores">
           <div class="mini-score">Sound <span>${r.rating_sound}/5</span></div>
           <div class="mini-score">Load-in <span>${r.rating_load_in}/5</span></div>
@@ -457,8 +458,9 @@ async function handleSubmitReview() {
   const proofLink   = document.getElementById("formLink").value.trim();
   const proofNotes  = document.getElementById("formProof").value.trim();
   const anonymous   = document.getElementById("formAnonymous").checked;
-  const paymentType = document.getElementById("formPaymentType").value;
-  const dealAmount  = document.getElementById("formDealAmount").value;
+  const paymentType  = document.getElementById("formPaymentType").value;
+  const dealAmount   = document.getElementById("formDealAmount").value;
+  const stipulations = document.getElementById("formStipulations").value.trim();
   const sr          = state.starRatings;
 
   if (!venueId || !artistName || !showDate || !body) {
@@ -475,7 +477,7 @@ async function handleSubmitReview() {
   try {
     await submitReview({
       venueId, artistName, showName, showDate, body, proofLink, proofNotes, anonymous,
-      paymentType, dealAmount,
+      paymentType, dealAmount, stipulations,
       sound: sr.sound, loadIn: sr.load, greenRoom: sr.green,
       promo: sr.promo, pay: sr.pay, again: sr.again,
     });
@@ -490,7 +492,7 @@ async function handleSubmitReview() {
 }
 
 function resetReviewForm() {
-  ["formArtist","formShow","formDate","formBody","formLink","formProof"].forEach(id => {
+  ["formArtist","formShow","formDate","formBody","formLink","formProof","formStipulations"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -746,6 +748,7 @@ function renderAdminQueue() {
           <div class="pending-proof">
             <strong>Proof link:</strong> ${p.proof_link ? `<a href="${escHtml(p.proof_link)}" target="_blank" rel="noopener" style="color:var(--green-light);">${escHtml(p.proof_link)}</a>` : "None"}<br>
             <strong>Notes:</strong> ${escHtml(p.proof_notes || "None")}
+            ${p.stipulations ? `<br><strong>Stipulations:</strong> ${escHtml(p.stipulations)}` : ""}
           </div>
           <div style="margin-bottom:10px;">
             <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);display:block;margin-bottom:4px;">Internal note (optional)</label>

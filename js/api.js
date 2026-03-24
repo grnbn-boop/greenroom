@@ -175,6 +175,7 @@ export async function submitReview(reviewData) {
     anonymous:       reviewData.anonymous ?? false,
     payment_type:    reviewData.paymentType || null,
     deal_amount:     reviewData.dealAmount ? parseFloat(reviewData.dealAmount) : null,
+    stipulations:    reviewData.stipulations || null,
   }).select().single();
 
   if (error) throw error;
