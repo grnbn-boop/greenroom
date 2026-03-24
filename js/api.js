@@ -172,6 +172,7 @@ export async function submitReview(reviewData) {
     rating_again:    reviewData.again,
     proof_link:      reviewData.proofLink,
     proof_notes:     reviewData.proofNotes,
+    anonymous:       reviewData.anonymous ?? false,
   }).select().single();
 
   if (error) throw error;

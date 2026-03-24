@@ -321,24 +321,28 @@ function renderDetailPanel(venue, reviews) {
   if (!reviews.length) {
     rev.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:14px;font-style:italic;">No verified reviews yet.<br>Be the first artist to share your experience.</div>`;
   } else {
-    rev.innerHTML = reviews.map(r => `
-      <div class="review-item">
-        <div class="review-top">
-          <div class="reviewer-name">${escHtml(r.artist_name)}</div>
-          <div class="review-date">${r.show_date}</div>
-        </div>
-        ${r.show_name ? `<div class="review-show">${escHtml(r.show_name)}</div>` : ""}
-        <div class="review-body">${escHtml(r.body)}</div>
-        <div class="review-mini-scores">
-          <div class="mini-score">Sound <span>${r.rating_sound}/5</span></div>
-          <div class="mini-score">Load-in <span>${r.rating_load_in}/5</span></div>
-          <div class="mini-score">Green Rm <span>${r.rating_green_room}/5</span></div>
-          <div class="mini-score">Promo <span>${r.rating_promo}/5</span></div>
-          <div class="mini-score">Pay <span>${r.rating_pay}/5</span></div>
-          <div class="mini-score">Play Again <span>${r.rating_again}/5</span></div>
-        </div>
-      </div>
-    `).join("");
+    rev.innerHTML = reviews.map(r => {
+      const anon = r.anonymous;
+      const displayName = anon ? "Verified Artist" : escHtml(r.artist_name);
+      const displayDate = anon ? monthYear(r.show_date) : r.show_date;
+      return `
+        <div class="review-item">
+          <div class="review-top">
+            <div class="reviewer-name">${displayName}${anon ? ' <span class="anon-tag">anonymous</span>' : ""}</div>
+            <div class="review-date">${displayDate}</div>
+          </div>
+          ${(!anon && r.show_name) ? `<div class="review-show">${escHtml(r.show_name)}</div>` : ""}
+          <div class="review-body">${escHtml(r.body)}</div>
+          <div class="review-mini-scores">
+            <div class="mini-score">Sound <span>${r.rating_sound}/5</span></div>
+            <div class="mini-score">Load-in <span>${r.rating_load_in}/5</span></div>
+            <div class="mini-score">Green Rm <span>${r.rating_green_room}/5</span></div>
+            <div class="mini-score">Promo <span>${r.rating_promo}/5</span></div>
+            <div class="mini-score">Pay <span>${r.rating_pay}/5</span></div>
+            <div class="mini-score">Play Again <span>${r.rating_again}/5</span></div>
+          </div>
+        </div>`;
+    }).join("");
   }
 }
 
@@ -366,6 +370,7 @@ async function handleSubmitReview() {
   const body       = document.getElementById("formBody").value.trim();
   const proofLink  = document.getElementById("formLink").value.trim();
   const proofNotes = document.getElementById("formProof").value.trim();
+  const anonymous  = document.getElementById("formAnonymous").checked;
   const sr         = state.starRatings;
 
   if (!venueId || !artistName || !showDate || !body) {
@@ -378,7 +383,7 @@ async function handleSubmitReview() {
   setLoading(true);
   try {
     await submitReview({
-      venueId, artistName, showName, showDate, body, proofLink, proofNotes,
+      venueId, artistName, showName, showDate, body, proofLink, proofNotes, anonymous,
       sound: sr.sound, loadIn: sr.load, greenRoom: sr.green,
       promo: sr.promo, pay: sr.pay, again: sr.again,
     });
@@ -397,6 +402,8 @@ function resetReviewForm() {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+  const anonBox = document.getElementById("formAnonymous");
+  if (anonBox) anonBox.checked = false;
   Object.keys(state.starRatings).forEach(k => {
     state.starRatings[k] = 0;
     highlightStars(k, 0);
@@ -627,6 +634,7 @@ function renderAdminQueue() {
             </div>
             <div>
               <div class="pending-badge">Pending</div>
+              ${p.anonymous ? `<div style="font-size:11px;color:#2456a4;margin-top:4px;font-weight:600;">🔒 Anonymous</div>` : ""}
               <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace;">${p.created_at?.split("T")[0]}</div>
             </div>
           </div>
@@ -860,6 +868,12 @@ function closeConfirmVenueDirect() {
 function escHtml(str) {
   if (!str) return "";
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function monthYear(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function starsDisplay(rating) {
