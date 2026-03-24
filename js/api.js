@@ -17,7 +17,10 @@ export async function signUp(email, password, displayName) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    options: {
+      data: { display_name: displayName },
+      emailRedirectTo: "https://grnbn-boop.github.io/greenroom/",
+    },
   });
   if (error) throw error;
   return data;

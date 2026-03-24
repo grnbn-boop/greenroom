@@ -257,20 +257,26 @@
 <!-- Load app as ES module so it can import from api.js -->
 <script type="module" src="js/app.js"></script>
 
-<!-- Auth callback handler — must load before app.js -->
+<!-- Auth callback handler: handles both PKCE (?code=) and implicit (#access_token=) flows -->
 <script type="module">
   import { supabase } from "./js/api.js";
 
-  // Supabase puts auth tokens in the URL hash after email confirmation
   const hash = window.location.hash;
-  if (hash && hash.includes("access_token")) {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("code")) {
+    // PKCE flow (default for sb_publishable keys): exchange code for session
+    const { error } = await supabase.auth.exchangeCodeForSession(params.get("code"));
+    if (!error) {
+      history.replaceState(null, "", window.location.pathname);
+    }
+  } else if (hash && hash.includes("access_token")) {
+    // Implicit flow (legacy): session is already set, just clean the URL
     const { data, error } = await supabase.auth.getSession();
     if (!error && data.session) {
-      // Clean the token out of the URL without reloading the page
       history.replaceState(null, "", window.location.pathname);
     }
   }
-
 </script>
 </body>
 </html>
