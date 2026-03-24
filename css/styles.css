@@ -177,10 +177,6 @@ nav {
   height: calc(100vh - 56px - 53px - 57px);
   min-height: 500px;
 }
-@media (max-width: 700px) {
-  .main-layout { grid-template-columns: 1fr; height: auto; }
-  .map-panel { height: 260px; }
-}
 
 /* ── VENUE LIST ── */
 .venue-list { overflow-y: auto; border-right: 1px solid var(--border); background: var(--cream); }
@@ -534,6 +530,159 @@ nav {
 .profile-stat:last-child { border-bottom: none; }
 .profile-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
 .profile-stat-value { font-size: 15px; color: var(--text); font-family: 'Instrument Sans', sans-serif; }
+
+/* ── FORM 2-COL GRID ── */
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  padding: 8px; margin-left: auto; flex-shrink: 0;
+}
+.hamburger span {
+  display: block; width: 20px; height: 2px;
+  background: rgba(245,240,232,0.8); border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── MOBILE NAV DRAWER ── */
+.mobile-nav {
+  display: none; position: fixed;
+  top: 56px; left: 0; right: 0;
+  background: var(--green); z-index: 998;
+  flex-direction: column;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 6px 0 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+.mobile-nav.open { display: flex; }
+.mobile-nav-backdrop {
+  display: none; position: fixed; inset: 0;
+  top: 56px; z-index: 997;
+  background: rgba(0,0,0,0.3);
+}
+.mobile-nav-backdrop.open { display: block; }
+.mobile-nav-btn {
+  background: none; border: none;
+  color: rgba(245,240,232,0.75);
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 15px; font-weight: 500;
+  padding: 13px 20px; text-align: left; cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  width: 100%;
+}
+.mobile-nav-btn:hover, .mobile-nav-btn.active { color: var(--cream); background: rgba(255,255,255,0.06); }
+.mobile-nav-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 6px 0; }
+.mobile-nav-pill {
+  display: block; background: var(--amber); color: #fff; border: none;
+  border-radius: 6px; margin: 6px 16px 0; padding: 12px 16px;
+  font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: center; width: calc(100% - 32px);
+}
+.mobile-nav-muted {
+  font-size: 12px; color: rgba(245,240,232,0.45);
+  padding: 4px 20px 8px; font-style: italic;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 768px)
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .venue-list { height: 45vh; min-height: 280px; }
+  .map-panel { height: 320px; }
+  #map { min-height: 320px; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MOBILE (≤ 640px)
+══════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Nav ── */
+  .nav-center { display: none; }
+  .nav-right   { display: none; }
+  .hamburger   { display: flex; }
+
+  /* ── Hero ── */
+  .hero { padding: 2.5rem 1.25rem 2rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .btn-primary, .btn-secondary { width: 100%; text-align: center; }
+
+  /* ── Search ── */
+  .search-section { padding: 0.75rem 1rem; flex-wrap: wrap; }
+  .city-search-wrap { flex: none; width: 100%; }
+  #nameFilter { max-width: none !important; flex: 1; min-width: 0; }
+  /* Let filter buttons scroll horizontally on one line */
+  .search-section > .filter-btn { flex-shrink: 0; }
+
+  /* ── Map/list ── */
+  .venue-list { height: 40vh; min-height: 240px; }
+  .map-panel  { height: 260px; }
+  #map { min-height: 260px; }
+
+  /* ── Detail overlay ── */
+  .detail-panel { max-height: 93vh; }
+  .detail-title { font-size: 20px; }
+  .detail-scores { grid-template-columns: repeat(3, 1fr); } /* keep 3-col, just smaller */
+  .score-val { font-size: 18px; }
+  .score-label { font-size: 9px; }
+  .reviews-section { padding: 1rem; }
+  .reviews-section-header { flex-direction: column; align-items: flex-start; }
+
+  /* ── Form overlay — slide up from bottom like detail panel ── */
+  .form-overlay { padding: 0; align-items: flex-end; }
+  .form-panel {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+  .form-header { border-radius: 16px 16px 0 0; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .ratings-grid { grid-template-columns: 1fr 1fr; } /* keep 2-col — stars need space */
+
+  /* ── Auth modal ── */
+  .auth-modal { padding: 0; align-items: flex-end; }
+  .auth-panel { border-radius: 16px 16px 0 0; max-width: 100%; }
+  .auth-header { border-radius: 16px 16px 0 0; }
+
+  /* ── Admin page ── */
+  .admin-page { padding: 1rem; }
+  .admin-header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .pending-top { flex-wrap: wrap; gap: 6px; }
+  .pending-top > div:last-child { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pending-info { line-height: 2; }
+  .pending-actions { flex-wrap: wrap; gap: 6px; }
+  .pending-actions .btn-approve,
+  .pending-actions .btn-reject,
+  .pending-actions .btn-request { flex: 1; min-width: 80px; text-align: center; }
+
+  /* ── My Reviews page ── */
+  #page-myreviews > div { padding: 0 1rem 2rem; margin: 1.5rem auto; }
+
+  /* ── About page ── */
+  .about-page { margin: 1.5rem auto; padding: 0 1rem 2rem; }
+  .about-page h1 { font-size: 1.8rem; }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — SMALL MOBILE (≤ 400px)
+══════════════════════════════════════ */
+@media (max-width: 400px) {
+  .detail-scores { grid-template-columns: repeat(2, 1fr); }
+  .score-val { font-size: 20px; }
+  .score-label { font-size: 10px; }
+  .review-mini-scores { gap: 5px; }
+  .pending-venue { font-size: 15px; }
+}
 
 /* ── TOAST ── */
 .toast {

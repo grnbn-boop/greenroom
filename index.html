@@ -29,7 +29,18 @@
     <button class="nav-btn" onclick="showAuthModal('signin')">Sign in</button>
     <button class="nav-pill" onclick="showAuthModal('signup')">Join as Artist</button>
   </div>
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- ── MOBILE NAV DRAWER ── -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn" onclick="showPage('discover'); closeMobileMenu()">Discover</button>
+  <button class="mobile-nav-btn" onclick="showPage('about'); closeMobileMenu()">How It Works</button>
+  <div id="mobileNavAuth"></div>
+</div>
+<div class="mobile-nav-backdrop" id="mobileNavBackdrop" onclick="closeMobileMenu()"></div>
 
 <!-- ══════════════════════════════════════
      DISCOVER PAGE
@@ -50,7 +61,7 @@
     <div class="city-search-wrap">
       <input class="search-input" type="text" id="citySearch" placeholder="Search a city — e.g. Toronto, Chicago, Glasgow…">
     </div>
-    <input class="search-input" type="text" style="max-width:200px;" placeholder="Filter by name…" oninput="setNameFilter(this.value)">
+    <input class="search-input" id="nameFilter" type="text" style="max-width:200px;" placeholder="Filter by name…" oninput="setNameFilter(this.value)">
     <button class="filter-btn active" onclick="setTypeFilter('all', this)">All</button>
     <button class="filter-btn" onclick="setTypeFilter('bar', this)">Bars</button>
     <button class="filter-btn" onclick="setTypeFilter('theatre', this)">Theatres</button>
@@ -192,7 +203,7 @@
         <select id="formVenue"><option value="">Select a venue…</option></select>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>Artist / Band Name *</label>
           <input type="text" id="formArtist" placeholder="The Blue Fires">
@@ -316,7 +327,7 @@
         <label>Venue Name *</label>
         <input type="text" id="svName" placeholder="e.g. The Horseshoe Tavern">
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>Type</label>
           <select id="svType">
@@ -337,7 +348,7 @@
         <label>Address</label>
         <input type="text" id="svAddress" placeholder="Street address">
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>City *</label>
           <input type="text" id="svCity" placeholder="e.g. Toronto">
@@ -378,7 +389,7 @@
         <label>Venue Name *</label>
         <input type="text" id="cvName">
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>Type</label>
           <select id="cvType">
@@ -398,7 +409,7 @@
         <label>Address</label>
         <input type="text" id="cvAddress">
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>City *</label>
           <input type="text" id="cvCity">
@@ -412,7 +423,7 @@
         <label>Website</label>
         <input type="url" id="cvWebsite">
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-grid-2">
         <div class="field">
           <label>Latitude *</label>
           <input type="number" step="any" id="cvLat" placeholder="e.g. 43.6532">

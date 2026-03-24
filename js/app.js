@@ -67,6 +67,7 @@ async function initAuth() {
 }
 
 function renderAuthUI() {
+  renderMobileNavAuth();
   const authArea = document.getElementById("authArea");
   if (!authArea) return;
   if (state.user) {
@@ -713,7 +714,7 @@ function showAdminTab(tab) {
 }
 
 function updateAdminBadge(count) {
-  [document.getElementById("adminNavBadge"), document.getElementById("reviewQueueBadge")].forEach(el => {
+  ["adminNavBadge", "reviewQueueBadge", "mobileAdminBadge"].map(id => document.getElementById(id)).forEach(el => {
     if (!el) return;
     if (count > 0) {
       el.textContent = count;
@@ -870,6 +871,7 @@ async function handleSignOut() {
 
 // ─── PAGE NAV ────────────────────────────────────────────────
 function showPage(page) {
+  closeMobileMenu();
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.getElementById("page-" + page)?.classList.add("active");
@@ -1029,6 +1031,45 @@ function closeConfirmVenueDirect() {
   document.getElementById("confirmVenueOverlay").classList.remove("open");
 }
 
+// ─── MOBILE MENU ─────────────────────────────────────────────
+function toggleMobileMenu() {
+  const nav      = document.getElementById("mobileNav");
+  const backdrop = document.getElementById("mobileNavBackdrop");
+  const btn      = document.getElementById("hamburgerBtn");
+  const isOpen   = nav.classList.contains("open");
+  nav.classList.toggle("open", !isOpen);
+  backdrop.classList.toggle("open", !isOpen);
+  btn.classList.toggle("open", !isOpen);
+}
+
+function closeMobileMenu() {
+  document.getElementById("mobileNav")?.classList.remove("open");
+  document.getElementById("mobileNavBackdrop")?.classList.remove("open");
+  document.getElementById("hamburgerBtn")?.classList.remove("open");
+}
+
+function renderMobileNavAuth() {
+  const container = document.getElementById("mobileNavAuth");
+  if (!container) return;
+  if (state.user) {
+    const name = state.profile?.artist_name || state.profile?.display_name || state.user.email;
+    container.innerHTML = `
+      <div class="mobile-nav-divider"></div>
+      <div class="mobile-nav-muted">${escHtml(name)}</div>
+      <button class="mobile-nav-btn" onclick="showPage('myreviews'); closeMobileMenu()">My Reviews</button>
+      ${state.adminMode ? `<button class="mobile-nav-btn" onclick="showPage('admin'); closeMobileMenu()">Admin <span class="queue-badge" id="mobileAdminBadge" style="display:none;"></span></button>` : ""}
+      <button class="mobile-nav-pill" onclick="openReviewForm(null); closeMobileMenu()">+ Submit Review</button>
+      <button class="mobile-nav-btn" onclick="handleSignOut(); closeMobileMenu()">Sign out</button>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="mobile-nav-divider"></div>
+      <button class="mobile-nav-btn" onclick="showAuthModal('signin'); closeMobileMenu()">Sign in</button>
+      <button class="mobile-nav-pill" onclick="showAuthModal('signup'); closeMobileMenu()">Join as Artist</button>
+    `;
+  }
+}
+
 // ─── ARTIST PROFILE OVERLAY ──────────────────────────────────
 async function openProfile(userId) {
   if (!userId) return;
@@ -1157,3 +1198,5 @@ window.openProfile = openProfile;
 window.closeProfile = closeProfile;
 window.closeProfileDirect = closeProfileDirect;
 window.handleNotifyToggle = handleNotifyToggle;
+window.toggleMobileMenu = toggleMobileMenu;
+window.closeMobileMenu = closeMobileMenu;
