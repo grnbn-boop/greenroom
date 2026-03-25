@@ -339,6 +339,16 @@ nav {
 .pending-body { font-size: 13px; line-height: 1.6; margin-bottom: 10px; border-left: 3px solid var(--cream-dark); padding-left: 12px; }
 .pending-proof { font-size: 12px; background: rgba(74,124,74,0.06); border: 1px solid rgba(74,124,74,0.15); border-radius: 4px; padding: 7px 10px; margin-bottom: 12px; color: var(--text-muted); }
 .pending-proof strong { color: var(--green-light); }
+.pending-proof-img { display: block; max-width: 240px; max-height: 140px; border-radius: 4px; margin-top: 6px; border: 1px solid rgba(74,124,74,0.2); cursor: pointer; }
+
+/* Proof image upload widget */
+.proof-upload-wrap { display: flex; align-items: center; gap: 8px; }
+.proof-upload-wrap input[type="file"] { display: none; }
+.proof-upload-btn { display: inline-block; padding: 5px 11px; background: var(--green); color: #fff; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.proof-upload-btn:hover { background: var(--green-light); }
+.proof-upload-name { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+#proofImagePreview img { display: block; max-width: 100%; max-height: 120px; border-radius: 4px; margin-top: 6px; border: 1px solid rgba(74,124,74,0.2); }
+#proofImagePreview .proof-pdf-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--green-light); background: rgba(74,124,74,0.1); padding: 4px 8px; border-radius: 4px; margin-top: 6px; }
 .pending-actions { display: flex; gap: 8px; }
 .btn-approve { background: var(--green); color: #fff; border: none; border-radius: 5px; padding: 8px 16px; font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
 .btn-approve:hover { background: var(--green-mid); }

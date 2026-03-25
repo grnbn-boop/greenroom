@@ -83,6 +83,7 @@ export function renderAdminQueue() {
             <strong>Proof link:</strong> ${p.proof_link ? `<a href="${escHtml(p.proof_link)}" target="_blank" rel="noopener" style="color:var(--green-light);">${escHtml(p.proof_link)}</a>` : "None"}<br>
             <strong>Notes:</strong> ${escHtml(p.proof_notes || "None")}
             ${p.stipulations ? `<br><strong>Stipulations:</strong> ${escHtml(p.stipulations)}` : ""}
+            ${p.proof_image_url ? `<br><strong>Proof image:</strong> <a href="${escHtml(p.proof_image_url)}" target="_blank" rel="noopener" style="color:var(--green-light);">Open full size ↗</a><br><a href="${escHtml(p.proof_image_url)}" target="_blank" rel="noopener"><img class="pending-proof-img" src="${escHtml(p.proof_image_url)}" alt="Proof image" loading="lazy"></a>` : ""}
           </div>
           <div style="margin-bottom:10px;">
             <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);display:block;margin-bottom:4px;">Internal note (optional)</label>

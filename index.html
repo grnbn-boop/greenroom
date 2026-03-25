@@ -261,6 +261,15 @@
           <label>Event Link (Bandsintown, Songkick, FB, Setlist.fm)</label>
           <input type="url" id="formLink" placeholder="https://…">
         </div>
+        <div class="field" style="margin-bottom:8px;">
+          <label>Upload Proof Image or PDF — optional</label>
+          <div class="proof-upload-wrap">
+            <label class="proof-upload-btn" for="formProofImage">Choose file…</label>
+            <span id="proofImageName" class="proof-upload-name">No file chosen</span>
+            <input type="file" id="formProofImage" accept="image/*,.pdf" onchange="handleProofImageChange(this)">
+          </div>
+          <div id="proofImagePreview"></div>
+        </div>
         <div class="field" style="margin-bottom:0;">
           <label>Additional Verification Notes</label>
           <input type="text" id="formProof" placeholder="e.g. Contract available, settlement photo, booking email…">

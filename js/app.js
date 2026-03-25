@@ -9,7 +9,7 @@ import { loadVenues, renderVenueList, openDetail, closeDetail, closeDetailDirect
          setDetailPaymentFilter, setTypeFilter, setNameFilter, setupSearchListeners } from "./venues.js";
 import { openReviewForm, closeForm, closeFormDirect, handleSubmitReview, initStarPickers,
          toggleDealAmount, openSuggestForm, closeSuggest, closeSuggestDirect,
-         handleSubmitSuggestion, renderMyReviews } from "./reviews.js";
+         handleSubmitSuggestion, renderMyReviews, handleProofImageChange } from "./reviews.js";
 import { loadAdminQueue, loadVenueSuggestions, handleModerate, handleApproveSuggestion,
          handleRejectSuggestion, closeConfirmVenue, closeConfirmVenueDirect,
          geocodeConfirmVenue, handleConfirmVenue, showAdminTab,
@@ -74,6 +74,7 @@ window.openReviewForm         = openReviewForm;
 window.closeForm              = closeForm;
 window.closeFormDirect        = closeFormDirect;
 window.handleSubmitReview     = handleSubmitReview;
+window.handleProofImageChange = handleProofImageChange;
 window.toggleDealAmount       = toggleDealAmount;
 window.openSuggestForm        = openSuggestForm;
 window.closeSuggest           = closeSuggest;

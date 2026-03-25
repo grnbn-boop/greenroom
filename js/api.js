@@ -171,6 +171,21 @@ export async function importOsmVenues(cityName) {
 // ─── REVIEWS ─────────────────────────────────────────────────
 
 /**
+ * Upload a proof-of-performance image/PDF to Supabase Storage.
+ * Returns the public URL of the uploaded file.
+ */
+export async function uploadProofImage(file) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not signed in");
+  const ext  = file.name.split(".").pop().toLowerCase();
+  const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from("proof-images").upload(path, file);
+  if (error) throw error;
+  const { data } = supabase.storage.from("proof-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
  * Submit a new review (always lands in pending).
  */
 export async function submitReview(reviewData) {
@@ -192,6 +207,7 @@ export async function submitReview(reviewData) {
     rating_again:    reviewData.again,
     proof_link:      reviewData.proofLink,
     proof_notes:     reviewData.proofNotes,
+    proof_image_url: reviewData.proofImageUrl || null,
     anonymous:       reviewData.anonymous ?? false,
     payment_type:    reviewData.paymentType || null,
     deal_amount:     reviewData.dealAmount ? parseFloat(reviewData.dealAmount) : null,

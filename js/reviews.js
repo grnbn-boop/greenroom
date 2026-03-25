@@ -3,7 +3,7 @@
 
 import { state, setState } from "./state.js";
 import { escHtml, setLoading, showToast, statusStyle } from "./utils.js";
-import { submitReview, submitVenueSuggestion, getMyReviews } from "./api.js";
+import { submitReview, submitVenueSuggestion, getMyReviews, uploadProofImage } from "./api.js";
 
 // ─── REVIEW FORM ──────────────────────────────────────────────
 
@@ -35,8 +35,9 @@ export async function handleSubmitReview() {
   const showName    = document.getElementById("formShow").value.trim();
   const showDate    = document.getElementById("formDate").value;
   const body        = document.getElementById("formBody").value.trim();
-  const proofLink   = document.getElementById("formLink").value.trim();
-  const proofNotes  = document.getElementById("formProof").value.trim();
+  const proofLink      = document.getElementById("formLink").value.trim();
+  const proofNotes     = document.getElementById("formProof").value.trim();
+  const proofImageFile = document.getElementById("formProofImage").files[0] || null;
   const anonymous   = document.getElementById("formAnonymous").checked;
   const paymentType = document.getElementById("formPaymentType").value;
   const dealAmount  = document.getElementById("formDealAmount").value;
@@ -54,8 +55,12 @@ export async function handleSubmitReview() {
 
   setLoading(true);
   try {
+    let proofImageUrl = null;
+    if (proofImageFile) {
+      proofImageUrl = await uploadProofImage(proofImageFile);
+    }
     await submitReview({
-      venueId, artistName, showName, showDate, body, proofLink, proofNotes, anonymous,
+      venueId, artistName, showName, showDate, body, proofLink, proofNotes, proofImageUrl, anonymous,
       paymentType, dealAmount, stipulations,
       sound: sr.sound, loadIn: sr.load, greenRoom: sr.green,
       promo: sr.promo, pay: sr.pay, again: sr.again,
@@ -83,11 +88,46 @@ export function resetReviewForm() {
   if (dealAmt) dealAmt.value = "";
   const dealField = document.getElementById("dealAmountField");
   if (dealField) dealField.style.display = "none";
+  // Reset file upload
+  const proofImg = document.getElementById("formProofImage");
+  if (proofImg) proofImg.value = "";
+  const proofName = document.getElementById("proofImageName");
+  if (proofName) proofName.textContent = "No file chosen";
+  const proofPreview = document.getElementById("proofImagePreview");
+  if (proofPreview) proofPreview.innerHTML = "";
   // starRatings is a nested object — mutate keys directly and sync UI
   Object.keys(state.starRatings).forEach(k => {
     state.starRatings[k] = 0;
     highlightStars(k, 0);
   });
+}
+
+export function handleProofImageChange(input) {
+  const file      = input.files[0];
+  const nameEl    = document.getElementById("proofImageName");
+  const previewEl = document.getElementById("proofImagePreview");
+  if (!file) {
+    nameEl.textContent  = "No file chosen";
+    previewEl.innerHTML = "";
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast("File must be under 5MB.");
+    input.value         = "";
+    nameEl.textContent  = "No file chosen";
+    previewEl.innerHTML = "";
+    return;
+  }
+  nameEl.textContent = file.name;
+  if (file.type.startsWith("image/")) {
+    const reader  = new FileReader();
+    reader.onload = e => {
+      previewEl.innerHTML = `<img src="${e.target.result}" alt="Proof preview">`;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewEl.innerHTML = `<span class="proof-pdf-badge">📄 ${escHtml(file.name)}</span>`;
+  }
 }
 
 // ─── STAR PICKERS ─────────────────────────────────────────────

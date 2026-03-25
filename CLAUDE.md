@@ -27,12 +27,23 @@ greenroom/
 │   └── styles.css                      # All styles
 ├── js/
 │   ├── api.js                          # All Supabase calls — single source of truth
-│   └── app.js                          # All UI logic, map, auth, admin
+│   ├── state.js                        # Shared app state store + setState()
+│   ├── utils.js                        # Pure utilities: escHtml, showToast, starsDisplay, etc.
+│   ├── map.js                          # Leaflet map init, markers, marker click callback
+│   ├── venues.js                       # Venue list, detail overlay, filters, search listeners
+│   ├── reviews.js                      # Review form, star pickers, suggest form, My Reviews
+│   ├── admin.js                        # Moderation queue, venue suggestions, email toggle
+│   ├── auth.js                         # Auth init, sign in/up/out, nav rendering
+│   ├── profile.js                      # Artist profile overlay
+│   ├── mobile.js                       # Hamburger menu, mobile nav auth
+│   └── app.js                          # Thin orchestrator — wires modules, page routing, window.* exports
 └── supabase/
     ├── schema.sql                       # Full DB schema — run once in SQL Editor
     └── functions/
-        └── import-osm-venues/
-            └── index.ts                # Edge Function: OSM venue importer
+        ├── import-osm-venues/
+        │   └── index.ts                # Edge Function: OSM venue importer
+        └── notify-review-submitted/
+            └── index.ts                # Edge Function: email admin on new review (Resend API)
 ```
 
 ## Supabase Database Schema
@@ -232,6 +243,32 @@ All pages live in `index.html` as `<div class="page">` blocks, shown/hidden via 
 - `detailOverlay` — venue detail sheet (scores + approved reviews)
 - `formOverlay` — submit review form (6 star-rating categories + proof fields)
 - `authModal` — sign in / join as artist
+- `profileOverlay` — artist public profile (name, artist name, verified badge, member since / time on platform)
+
+## JS Module Architecture
+
+`app.js` is a thin orchestrator — all logic lives in focused modules. Dependency graph (no circular imports):
+
+```
+api.js  ←──────────────────────────── (all modules import from here)
+state.js ←─────────────────────────── (all modules import state/setState)
+utils.js  ← state.js
+map.js    ← utils.js
+venues.js ← api.js, state.js, utils.js, map.js
+reviews.js← api.js, state.js, utils.js
+admin.js  ← api.js, state.js, utils.js, venues.js, map.js
+auth.js   ← api.js, state.js, utils.js, admin.js, mobile.js
+profile.js← api.js
+mobile.js ← state.js, utils.js
+app.js    ← everything (wires it all together)
+```
+
+**Key patterns:**
+- `map.js` uses `setMarkerClickHandler(fn)` callback to avoid circular dep with `venues.js` — `app.js` passes `openDetail` after importing both
+- `onMapMoveEnd` lives in `app.js` because it bridges `venues.js` + `map.js`
+- `showPage()` lives in `app.js` because it imports from all modules
+- All `window.*` function assignments are at the bottom of `app.js` (required for HTML `onclick` attributes in ES module context)
+- `state.starRatings` keys (sound/load/green/promo/pay/again) are mutated directly in `reviews.js` — they're ephemeral UI state not needing reactive updates
 
 ## js/api.js — Exported Functions
 
@@ -241,6 +278,8 @@ All pages live in `index.html` as `<div class="page">` blocks, shown/hidden via 
 - `signOut()`
 - `getCurrentUser()`
 - `getProfile(userId)`
+- `getPublicProfile(userId)` — fetches `id, display_name, artist_name, is_verified, created_at` for profile overlay
+- `updateNotifyOnReview(value)` — sets `notify_on_review` boolean on current user's profile
 - `isAdmin(userId)`
 
 ### Venues
@@ -300,11 +339,11 @@ All pages live in `index.html` as `<div class="page">` blocks, shown/hidden via 
 ## Things Not Yet Built / Next Steps
 - 🔲 Fix email confirmation 404 (user registers successfully but link gives 404)
 - 🔲 Suggest a venue flow — user submits a venue suggestion, admin reviews and approves it to the map
-- 🔲 Artist account profile pages
+- ✅ Artist account profile pages (name, artist name, verified badge, member since / time on platform)
 - 🔲 Venue claim/response system (venues responding to reviews)
 - ✅ Email notifications to admin when new review submitted (opt-in toggle on Admin page; Edge Function notify-review-submitted + Resend; Database Webhook on reviews INSERT)
 - 🔲 Search autocomplete dropdown for venue name search
-- 🔲 Mobile responsive improvements
+- ✅ Mobile responsive improvements (hamburger nav, bottom-sheet overlays, form grid collapse, breakpoints at 768/640/400px)
 - 🔲 Custom domain (currently on github.io subdomain)
 - 🔲 Rate limiting on review submissions
 - 🔲 Image upload for proof of performance
