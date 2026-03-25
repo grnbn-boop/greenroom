@@ -149,6 +149,20 @@ nav {
   flex-wrap: wrap;
 }
 .city-search-wrap { position: relative; flex: 1; min-width: 200px; }
+.name-filter-wrap { position: relative; max-width: 220px; }
+.autocomplete-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 1000;
+  background: #fff; border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 6px 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-height: 280px; overflow-y: auto;
+}
+.ac-item {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 9px 14px; cursor: pointer; gap: 8px;
+}
+.ac-item:hover, .ac-item.ac-selected { background: rgba(74,124,74,0.08); }
+.ac-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-city { font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 .search-input {
   width: 100%;
   background: #fff;
@@ -630,7 +644,8 @@ nav {
   /* ── Search ── */
   .search-section { padding: 0.75rem 1rem; flex-wrap: wrap; }
   .city-search-wrap { flex: none; width: 100%; }
-  #nameFilter { max-width: none !important; flex: 1; min-width: 0; }
+  .name-filter-wrap { max-width: none; flex: 1; min-width: 0; }
+  #nameFilter { max-width: none !important; width: 100%; }
   /* Let filter buttons scroll horizontally on one line */
   .search-section > .filter-btn { flex-shrink: 0; }
 

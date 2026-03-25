@@ -3,11 +3,14 @@
 
 import { state, setState } from "./state.js";
 import { escHtml, monthYear, starsDisplay, setLoading, showToast, PAYMENT_LABELS } from "./utils.js";
-import { getVenueStats, getVenueDetail, importOsmVenues, subscribeToVenueReviews } from "./api.js";
+import { getVenueStats, getVenueDetail, importOsmVenues, subscribeToVenueReviews, searchVenues } from "./api.js";
 import { getMap, renderMarkers, updateMarkerIcon } from "./map.js";
 
 let venueChannel = null;
 let geocodeTimeout;
+let autocompleteTimeout;
+let acResults = [];
+let acSelectedIndex = -1;
 
 // ─── LOAD & LIST ──────────────────────────────────────────────
 
@@ -251,6 +254,92 @@ export function setupSearchListeners() {
       handleCitySearch(e.target.value);
     }
   });
+  setupNameAutocomplete();
+}
+
+// ─── NAME AUTOCOMPLETE ─────────────────────────────────────────
+
+function setupNameAutocomplete() {
+  const input    = document.getElementById("nameFilter");
+  const dropdown = document.getElementById("nameAutocomplete");
+  if (!input || !dropdown) return;
+
+  input.addEventListener("input", e => {
+    const q = e.target.value.trim();
+    acSelectedIndex = -1;
+    clearTimeout(autocompleteTimeout);
+    if (q.length < 2) { hideAutocomplete(); return; }
+    autocompleteTimeout = setTimeout(() => fetchAutocomplete(q), 300);
+  });
+
+  input.addEventListener("keydown", e => {
+    if (dropdown.style.display === "none") return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      acSelectedIndex = Math.min(acSelectedIndex + 1, acResults.length - 1);
+      renderDropdownSelection();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      acSelectedIndex = Math.max(acSelectedIndex - 1, -1);
+      renderDropdownSelection();
+    } else if (e.key === "Enter" && acSelectedIndex >= 0) {
+      e.preventDefault();
+      selectAutocompleteVenue(acResults[acSelectedIndex]);
+    } else if (e.key === "Escape") {
+      hideAutocomplete();
+    }
+  });
+
+  document.addEventListener("click", e => {
+    if (!input.contains(e.target) && !dropdown.contains(e.target)) hideAutocomplete();
+  });
+}
+
+async function fetchAutocomplete(query) {
+  try {
+    acResults = await searchVenues(query, 8);
+    if (!acResults.length) { hideAutocomplete(); return; }
+    renderAutocompleteDropdown();
+  } catch (_) { /* silently fail */ }
+}
+
+function renderAutocompleteDropdown() {
+  const dropdown = document.getElementById("nameAutocomplete");
+  if (!dropdown) return;
+  dropdown.innerHTML = acResults.map((v, i) => `
+    <div class="ac-item${i === acSelectedIndex ? " ac-selected" : ""}" data-idx="${i}">
+      <span class="ac-name">${escHtml(v.name)}</span>
+      <span class="ac-city">${escHtml(v.city || "")}</span>
+    </div>
+  `).join("");
+  dropdown.querySelectorAll(".ac-item").forEach(el => {
+    el.addEventListener("mousedown", e => {
+      e.preventDefault(); // prevent input blur before click registers
+      selectAutocompleteVenue(acResults[parseInt(el.dataset.idx)]);
+    });
+  });
+  dropdown.style.display = "block";
+}
+
+function renderDropdownSelection() {
+  document.querySelectorAll("#nameAutocomplete .ac-item").forEach((el, i) => {
+    el.classList.toggle("ac-selected", i === acSelectedIndex);
+  });
+}
+
+function hideAutocomplete() {
+  const dropdown = document.getElementById("nameAutocomplete");
+  if (dropdown) { dropdown.style.display = "none"; dropdown.innerHTML = ""; }
+  acResults      = [];
+  acSelectedIndex = -1;
+}
+
+function selectAutocompleteVenue(venue) {
+  const input = document.getElementById("nameFilter");
+  if (input) input.value = venue.name;
+  hideAutocomplete();
+  if (venue.lat && venue.lng) getMap().flyTo([venue.lat, venue.lng], 14);
+  openDetail(venue.id);
 }
 
 async function handleCitySearch(query) {

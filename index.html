@@ -61,7 +61,10 @@
     <div class="city-search-wrap">
       <input class="search-input" type="text" id="citySearch" placeholder="Search a city — e.g. Toronto, Chicago, Glasgow…">
     </div>
-    <input class="search-input" id="nameFilter" type="text" style="max-width:200px;" placeholder="Filter by name…" oninput="setNameFilter(this.value)">
+    <div class="name-filter-wrap">
+      <input class="search-input" id="nameFilter" type="text" placeholder="Search venues by name…" oninput="setNameFilter(this.value)" autocomplete="off">
+      <div id="nameAutocomplete" class="autocomplete-dropdown" style="display:none;"></div>
+    </div>
     <button class="filter-btn active" onclick="setTypeFilter('all', this)">All</button>
     <button class="filter-btn" onclick="setTypeFilter('bar', this)">Bars</button>
     <button class="filter-btn" onclick="setTypeFilter('theatre', this)">Theatres</button>
