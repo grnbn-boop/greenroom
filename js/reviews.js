@@ -13,6 +13,10 @@ export function openReviewForm(venueId) {
     showToast("Sign in first to submit a review.");
     return;
   }
+  if (!state.profile?.is_verified && !state.profile?.is_admin) {
+    window.showPage?.("pending");
+    return;
+  }
   const sel = document.getElementById("formVenue");
   sel.innerHTML = `<option value="">Select a venue…</option>` +
     state.venues.map(v =>

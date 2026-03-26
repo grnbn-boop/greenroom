@@ -14,11 +14,15 @@ export async function initAuth() {
     setState({ user: session.user, profile, adminMode: profile?.is_admin === true });
   }
 
-  supabase.auth.onAuthStateChange(async (_event, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
     const user = session?.user ?? null;
     if (user) {
       const profile = await getProfile(user.id);
       setState({ user, profile, adminMode: profile?.is_admin === true });
+      // Route newly signed-in unverified users to the pending verification page
+      if (event === "SIGNED_IN" && !profile?.is_verified && !profile?.is_admin) {
+        window.showPage?.("pending");
+      }
     } else {
       setState({ user: null, profile: null, adminMode: false });
     }
@@ -40,13 +44,16 @@ export function renderAuthUI() {
   if (!authArea) return;
 
   if (state.user) {
-    const name = escHtml(state.profile?.artist_name || state.profile?.display_name || state.user.email);
+    const name       = escHtml(state.profile?.artist_name || state.profile?.display_name || state.user.email);
+    const isVerified = state.profile?.is_verified || state.adminMode;
     authArea.innerHTML = `
       <span class="nav-profile-name" onclick="openProfile('${state.user.id}')">${name}</span>
       ${state.adminMode
         ? `<button class="admin-badge" onclick="showPage('admin')">Admin <span id="adminNavBadge" class="queue-badge" style="display:none;"></span></button>`
         : ""}
-      <button class="nav-pill" onclick="openReviewForm(null)">+ Submit Review</button>
+      ${isVerified
+        ? `<button class="nav-pill" onclick="openReviewForm(null)">+ Submit Review</button>`
+        : `<button class="nav-pill" onclick="showPage('pending')" title="Your account is pending verification">Pending Verification</button>`}
       <button class="nav-btn"  onclick="handleSignOut()">Sign out</button>
     `;
   } else {

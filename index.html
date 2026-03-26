@@ -133,6 +133,31 @@
 </div>
 
 <!-- ══════════════════════════════════════
+     PENDING VERIFICATION PAGE
+══════════════════════════════════════ -->
+<div class="page" id="page-pending">
+  <div class="about-page" style="max-width:600px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:1rem;">🎸</div>
+    <h1 style="font-size:2rem; margin-bottom:1rem;">Account registered!</h1>
+    <p style="font-size:1.05rem; color:var(--text-muted); margin-bottom:2rem;">
+      Before you can submit reviews, we need to confirm you're a real performing artist.
+    </p>
+    <div class="verification-info" style="text-align:left;">
+      <h3 style="margin-bottom:0.75rem;">Next step: arrange a quick call</h3>
+      <p style="font-size:14px; color:var(--text-muted); margin-bottom:1rem;">
+        Reach out to <strong><a href="https://www.instagram.com/dahipest" target="_blank" rel="noopener" style="color:var(--green-light);">@dahipest on Instagram</a></strong> to arrange a short call. Once we've confirmed you're a performing artist, your account will be verified and you can start submitting reviews.
+      </p>
+      <p style="font-size:13px; color:var(--text-muted);">
+        In the meantime, feel free to browse venues and explore the map.
+      </p>
+    </div>
+    <div style="margin-top:2rem;">
+      <button class="btn-primary" onclick="showPage('discover')">Browse Venues</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      ADMIN PAGE
 ══════════════════════════════════════ -->
 <div class="page" id="page-admin">
@@ -145,6 +170,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" id="tabReviews" onclick="showAdminTab('reviews')">Review Queue <span id="reviewQueueBadge" class="queue-badge" style="display:none;"></span></button>
         <button class="admin-tab" id="tabSuggestions" onclick="showAdminTab('suggestions')">Venue Suggestions <span id="suggestionCount"></span></button>
+        <button class="admin-tab" id="tabArtists" onclick="showAdminTab('artists')">Artist Verification <span id="pendingUsersCount"></span></button>
       </div>
     </div>
     <div id="adminTabReviews">
@@ -157,6 +183,12 @@
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">Venues suggested by artists that aren't on the map yet. Verify details and add to the map.</p>
       <div id="venueSuggestionsQueue">
         <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading suggestions…</div>
+      </div>
+    </div>
+    <div id="adminTabArtists" style="display:none;">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">Artists who have registered but haven't been verified yet. Verify their account after completing a call to confirm they're a real performing artist.</p>
+      <div id="pendingUsersQueue">
+        <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading…</div>
       </div>
     </div>
   </div>

@@ -6,7 +6,7 @@ import { escHtml, setLoading, showToast, PAYMENT_LABELS } from "./utils.js";
 import {
   getPendingReviews, moderateReview, subscribeToPendingReviews,
   getPendingVenueSuggestions, approveVenueSuggestion, rejectVenueSuggestion,
-  updateNotifyOnReview,
+  updateNotifyOnReview, getPendingUsers, verifyUser,
 } from "./api.js";
 import { loadVenues, renderVenueList } from "./venues.js";
 import { renderMarkers } from "./map.js";
@@ -275,8 +275,72 @@ export function closeConfirmVenueDirect() {
 export function showAdminTab(tab) {
   document.getElementById("adminTabReviews").style.display     = tab === "reviews"     ? "block" : "none";
   document.getElementById("adminTabSuggestions").style.display = tab === "suggestions" ? "block" : "none";
+  document.getElementById("adminTabArtists").style.display     = tab === "artists"     ? "block" : "none";
   document.getElementById("tabReviews").classList.toggle("active",     tab === "reviews");
   document.getElementById("tabSuggestions").classList.toggle("active", tab === "suggestions");
+  document.getElementById("tabArtists").classList.toggle("active",     tab === "artists");
+}
+
+// ─── ARTIST VERIFICATION ──────────────────────────────────────
+
+export async function loadPendingUsers() {
+  try {
+    const pendingUsers = await getPendingUsers();
+    setState({ pendingUsers });
+    renderPendingUsersQueue();
+  } catch (err) {
+    console.error("Pending users error:", err);
+  }
+}
+
+export function renderPendingUsersQueue() {
+  const queue = document.getElementById("pendingUsersQueue");
+  if (!queue) return;
+
+  const badge = document.getElementById("pendingUsersCount");
+  if (badge) badge.textContent = state.pendingUsers.length ? `(${state.pendingUsers.length})` : "";
+
+  if (!state.pendingUsers.length) {
+    queue.innerHTML = `
+      <div style="padding:3rem;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:32px;margin-bottom:8px;">✓</div>
+        <div style="font-size:16px;font-weight:500;color:var(--green);">All artists verified</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">No accounts awaiting verification.</div>
+      </div>`;
+    return;
+  }
+
+  queue.innerHTML = state.pendingUsers.map(u => {
+    const name       = escHtml(u.artist_name || u.display_name || "Unnamed");
+    const secondary  = u.artist_name && u.display_name ? ` · ${escHtml(u.display_name)}` : "";
+    const joined     = u.created_at?.split("T")[0];
+    return `
+      <div class="pending-card" id="user-${u.id}">
+        <div class="pending-top">
+          <div>
+            <div class="pending-venue">${name}${secondary}</div>
+            <div style="font-size:13px;color:var(--text-muted);">Joined ${joined}</div>
+          </div>
+          <div>
+            <div class="pending-badge" style="background:#f0a83c;color:#fff;">Unverified</div>
+          </div>
+        </div>
+        <div class="pending-actions">
+          <button class="btn-approve" onclick="handleVerifyUser('${u.id}')">✓ Verify Artist</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+export async function handleVerifyUser(userId) {
+  try {
+    await verifyUser(userId);
+    setState({ pendingUsers: state.pendingUsers.filter(u => u.id !== userId) });
+    renderPendingUsersQueue();
+    showToast("Artist verified.");
+  } catch (err) {
+    showToast("Error verifying artist: " + err.message);
+  }
 }
 
 // ─── EMAIL NOTIFY TOGGLE ──────────────────────────────────────

@@ -205,6 +205,9 @@ create policy "profiles_select_all" on profiles for select using (true);
 create policy "profiles_update_own" on profiles for update
   using (auth.uid() = id);
 
+create policy "profiles_update_admin" on profiles for update
+  using (exists (select 1 from profiles where id = auth.uid() and is_admin = true));
+
 -- Reviews: approved reviews visible to all; own pending visible to author; admins see all
 create policy "reviews_select_approved" on reviews for select
   using (

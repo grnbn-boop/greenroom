@@ -13,6 +13,7 @@ export const state = {
   loading:             false,
   pendingReviews:      [],
   pendingSuggestions:  [],
+  pendingUsers:        [],
   detailReviews:       [],
   detailPaymentFilter: "all",
   starRatings:         { sound: 0, load: 0, green: 0, promo: 0, pay: 0, again: 0 },

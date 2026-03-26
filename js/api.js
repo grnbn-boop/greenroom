@@ -82,6 +82,30 @@ export async function isAdmin(userId) {
   return data?.is_admin === true;
 }
 
+/**
+ * Admin: fetch all profiles pending artist verification (is_verified = false).
+ */
+export async function getPendingUsers() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, artist_name, created_at")
+    .eq("is_verified", false)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Admin: mark an artist account as verified.
+ */
+export async function verifyUser(userId) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_verified: true })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
 // ─── VENUES ──────────────────────────────────────────────────
 
 /**
