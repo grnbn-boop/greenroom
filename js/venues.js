@@ -298,9 +298,11 @@ function setupNameAutocomplete() {
 async function fetchAutocomplete(query) {
   try {
     acResults = await searchVenues(query, 8);
-    if (!acResults.length) { hideAutocomplete(); return; }
+    if (!acResults || !acResults.length) { hideAutocomplete(); return; }
     renderAutocompleteDropdown();
-  } catch (_) { /* silently fail */ }
+  } catch (err) {
+    console.error("Autocomplete error:", err);
+  }
 }
 
 function renderAutocompleteDropdown() {
