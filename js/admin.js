@@ -287,10 +287,11 @@ export async function loadPendingUsers() {
   try {
     const pendingUsers = await getPendingUsers();
     setState({ pendingUsers });
-    renderPendingUsersQueue();
   } catch (err) {
     console.error("Pending users error:", err);
+    setState({ pendingUsers: [] });
   }
+  renderPendingUsersQueue();
 }
 
 export function renderPendingUsersQueue() {
@@ -304,7 +305,7 @@ export function renderPendingUsersQueue() {
     queue.innerHTML = `
       <div style="padding:3rem;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--border);">
         <div style="font-size:32px;margin-bottom:8px;">✓</div>
-        <div style="font-size:16px;font-weight:500;color:var(--green);">All artists verified</div>
+        <div style="font-size:16px;font-weight:500;color:var(--green);">All current artists are verified!</div>
         <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">No accounts awaiting verification.</div>
       </div>`;
     return;
