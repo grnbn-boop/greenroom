@@ -171,6 +171,7 @@
         <button class="admin-tab active" id="tabReviews" onclick="showAdminTab('reviews')">Review Queue <span id="reviewQueueBadge" class="queue-badge" style="display:none;"></span></button>
         <button class="admin-tab" id="tabSuggestions" onclick="showAdminTab('suggestions')">Venue Suggestions <span id="suggestionCount"></span></button>
         <button class="admin-tab" id="tabArtists" onclick="showAdminTab('artists')">Artist Verification <span id="pendingUsersCount"></span></button>
+        <button class="admin-tab" id="tabUsers" onclick="showAdminTab('users')">All Users</button>
       </div>
     </div>
     <div id="adminTabReviews">
@@ -189,6 +190,12 @@
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">Artists who have registered but haven't been verified yet. Verify their account after completing a call to confirm they're a real performing artist.</p>
       <div id="pendingUsersQueue">
         <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading…</div>
+      </div>
+    </div>
+    <div id="adminTabUsers" style="display:none;">
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:1.5rem;">All registered accounts. View each artist's verification status, join date, and review history.</p>
+      <div id="allProfilesQueue">
+        <div style="padding:2rem; color:var(--text-muted); font-size:14px;">Loading profiles…</div>
       </div>
     </div>
   </div>

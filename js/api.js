@@ -99,11 +99,48 @@ export async function getPendingUsers() {
  * Admin: mark an artist account as verified.
  */
 export async function verifyUser(userId) {
+  const user = await getCurrentUser();
   const { error } = await supabase
     .from("profiles")
-    .update({ is_verified: true })
+    .update({ is_verified: true, verified_at: new Date().toISOString(), verified_by: user?.id })
     .eq("id", userId);
   if (error) throw error;
+}
+
+/**
+ * Admin: remove verification from an artist account.
+ */
+export async function unverifyUser(userId) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_verified: false, verified_at: null, verified_by: null })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
+/**
+ * Admin: fetch all profiles for the Users overview tab.
+ */
+export async function getAllProfiles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, artist_name, is_admin, is_verified, created_at, verified_at, verified_by")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Admin: fetch all reviews submitted by a specific user.
+ */
+export async function getUserActivity(userId) {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, status, created_at, show_date, artist_name, venues(name, city)")
+    .eq("author_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
 }
 
 // ─── VENUES ──────────────────────────────────────────────────

@@ -14,7 +14,8 @@ import { loadAdminQueue, loadVenueSuggestions, handleModerate, handleApproveSugg
          handleRejectSuggestion, closeConfirmVenue, closeConfirmVenueDirect,
          geocodeConfirmVenue, handleConfirmVenue, showAdminTab,
          renderAdminNotifyToggle, handleNotifyToggle,
-         loadPendingUsers, handleVerifyUser } from "./admin.js";
+         loadPendingUsers, handleVerifyUser,
+         loadAllProfiles, toggleUserActivity, handleUnverifyUser } from "./admin.js";
 import { initAuth, renderAuthUI, showAuthModal, closeAuth, closeAuthDirect,
          handleAuthSubmit, handleSignOut } from "./auth.js";
 import { openProfile, closeProfile, closeProfileDirect } from "./profile.js";
@@ -57,7 +58,7 @@ function showPage(page) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.getElementById("page-" + page)?.classList.add("active");
   if (page === "discover")                    setTimeout(() => getMap()?.invalidateSize(), 50);
-  if (page === "admin" && state.adminMode)    { loadAdminQueue(); loadVenueSuggestions(); loadPendingUsers(); renderAdminNotifyToggle(); }
+  if (page === "admin" && state.adminMode)    { loadAdminQueue(); loadVenueSuggestions(); loadPendingUsers(); renderAdminNotifyToggle(); loadAllProfiles(); }
   if (page === "myreviews")                   renderMyReviews();
 }
 
@@ -96,6 +97,8 @@ window.handleConfirmVenue       = handleConfirmVenue;
 window.showAdminTab             = showAdminTab;
 window.handleNotifyToggle       = handleNotifyToggle;
 window.handleVerifyUser         = handleVerifyUser;
+window.handleUnverifyUser       = handleUnverifyUser;
+window.toggleUserActivity       = toggleUserActivity;
 window.openProfile              = openProfile;
 window.closeProfile             = closeProfile;
 window.closeProfileDirect       = closeProfileDirect;

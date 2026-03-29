@@ -6,7 +6,8 @@ import { escHtml, setLoading, showToast, PAYMENT_LABELS } from "./utils.js";
 import {
   getPendingReviews, moderateReview, subscribeToPendingReviews,
   getPendingVenueSuggestions, approveVenueSuggestion, rejectVenueSuggestion,
-  updateNotifyOnReview, getPendingUsers, verifyUser,
+  updateNotifyOnReview, getPendingUsers, verifyUser, unverifyUser,
+  getAllProfiles, getUserActivity,
 } from "./api.js";
 import { loadVenues, renderVenueList } from "./venues.js";
 import { renderMarkers } from "./map.js";
@@ -276,9 +277,13 @@ export function showAdminTab(tab) {
   document.getElementById("adminTabReviews").style.display     = tab === "reviews"     ? "block" : "none";
   document.getElementById("adminTabSuggestions").style.display = tab === "suggestions" ? "block" : "none";
   document.getElementById("adminTabArtists").style.display     = tab === "artists"     ? "block" : "none";
+  document.getElementById("adminTabUsers").style.display       = tab === "users"       ? "block" : "none";
   document.getElementById("tabReviews").classList.toggle("active",     tab === "reviews");
   document.getElementById("tabSuggestions").classList.toggle("active", tab === "suggestions");
   document.getElementById("tabArtists").classList.toggle("active",     tab === "artists");
+  document.getElementById("tabUsers").classList.toggle("active",       tab === "users");
+  if (tab === "artists") loadPendingUsers();
+  if (tab === "users")   loadAllProfiles();
 }
 
 // ─── ARTIST VERIFICATION ──────────────────────────────────────
@@ -337,10 +342,137 @@ export async function handleVerifyUser(userId) {
   try {
     await verifyUser(userId);
     setState({ pendingUsers: state.pendingUsers.filter(u => u.id !== userId) });
+    if (state.allProfiles.length) {
+      setState({ allProfiles: state.allProfiles.map(u => u.id === userId ? { ...u, is_verified: true } : u) });
+      renderAllProfiles();
+    }
     renderPendingUsersQueue();
     showToast("Artist verified.");
   } catch (err) {
     showToast("Error verifying artist: " + err.message);
+  }
+}
+
+// ─── ALL PROFILES (USERS TAB) ────────────────────────────────
+
+const STATUS_LABELS = { approved: "Approved", pending: "Pending", rejected: "Rejected", more_info_needed: "More Info Needed" };
+const STATUS_COLORS = { approved: "#2e7d32", pending: "#e65100", rejected: "#c62828", more_info_needed: "#1565c0" };
+
+export async function loadAllProfiles() {
+  const queue = document.getElementById("allProfilesQueue");
+  if (queue) queue.innerHTML = `<div style="padding:2rem;color:var(--text-muted);font-size:14px;">Loading profiles…</div>`;
+  try {
+    const allProfiles = await getAllProfiles();
+    setState({ allProfiles });
+  } catch (err) {
+    console.error("All profiles error:", err);
+    setState({ allProfiles: [] });
+  }
+  renderAllProfiles();
+}
+
+export function renderAllProfiles() {
+  const queue = document.getElementById("allProfilesQueue");
+  if (!queue) return;
+
+  if (!state.allProfiles.length) {
+    queue.innerHTML = `
+      <div style="padding:3rem;text-align:center;background:#fff;border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:16px;font-weight:500;color:var(--green);">No profiles found</div>
+      </div>`;
+    return;
+  }
+
+  queue.innerHTML = state.allProfiles.map(u => {
+    const name      = escHtml(u.artist_name || u.display_name || "Unnamed");
+    const secondary = u.artist_name && u.display_name
+      ? ` <span style="color:var(--text-muted);font-weight:400;">· ${escHtml(u.display_name)}</span>` : "";
+    const adminBadge = u.is_admin
+      ? `<span style="background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px;">Admin</span>` : "";
+    const verifiedBadge = u.is_verified
+      ? `<span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Verified</span>`
+      : `<span style="background:#f0a83c;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Unverified</span>`;
+    const verifiedLine = u.is_verified && u.verified_at
+      ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Verified ${u.verified_at.split("T")[0]}</div>` : "";
+
+    return `
+      <div class="pending-card" id="profile-${u.id}">
+        <div class="pending-top">
+          <div>
+            <div class="pending-venue">${name}${secondary}</div>
+            <div style="margin-top:6px;">${adminBadge}${verifiedBadge}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;">Joined ${u.created_at?.split("T")[0]}</div>
+            ${verifiedLine}
+          </div>
+        </div>
+        <div class="pending-actions">
+          ${!u.is_admin ? (u.is_verified
+            ? `<button class="btn-reject" onclick="handleUnverifyUser('${u.id}')">✕ Remove Verification</button>`
+            : `<button class="btn-approve" onclick="handleVerifyUser('${u.id}')">✓ Verify Artist</button>`)
+            : ""}
+          <button class="btn-request" onclick="toggleUserActivity('${u.id}')">⊞ View Activity</button>
+        </div>
+        <div id="activity-${u.id}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"></div>
+      </div>`;
+  }).join("");
+}
+
+export async function toggleUserActivity(userId) {
+  const el = document.getElementById(`activity-${userId}`);
+  if (!el) return;
+  if (el.style.display !== "none") { el.style.display = "none"; return; }
+
+  el.style.display = "block";
+  el.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">Loading activity…</div>`;
+
+  const u = state.allProfiles.find(p => p.id === userId);
+  let html = `<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);margin-bottom:10px;">Activity Log</div>`;
+
+  // Account created event
+  html += `<div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+    <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;">Account Created</span>
+    <span style="font-size:13px;color:var(--text-muted);">${u?.created_at?.split("T")[0] || "—"}</span>
+  </div>`;
+
+  // Verified event
+  if (u?.is_verified && u?.verified_at) {
+    html += `<div style="padding:6px 0;display:flex;align-items:center;gap:10px;">
+      <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;">Verified</span>
+      <span style="font-size:13px;color:var(--text-muted);">${u.verified_at.split("T")[0]}</span>
+    </div>`;
+  }
+
+  try {
+    const reviews = await getUserActivity(userId);
+    if (reviews.length) {
+      html += `<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);margin:12px 0 8px;">Reviews (${reviews.length})</div>`;
+      html += reviews.map(r => `
+        <div style="padding:8px 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:500;">${escHtml(r.venues?.name || "Unknown venue")}${r.venues?.city ? ` <span style="font-weight:400;color:var(--text-muted);">· ${escHtml(r.venues.city)}</span>` : ""}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">As: ${escHtml(r.artist_name || "—")} · Show: ${r.show_date || "—"} · Submitted: ${r.created_at?.split("T")[0]}</div>
+          </div>
+          <span style="background:${STATUS_COLORS[r.status] || "#888"};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;">${STATUS_LABELS[r.status] || r.status}</span>
+        </div>`).join("");
+    } else {
+      html += `<div style="font-size:13px;color:var(--text-muted);margin-top:8px;">No reviews submitted yet.</div>`;
+    }
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = html + `<div style="font-size:13px;color:#c62828;margin-top:8px;">Error loading reviews: ${escHtml(err.message)}</div>`;
+  }
+}
+
+export async function handleUnverifyUser(userId) {
+  try {
+    await unverifyUser(userId);
+    setState({ allProfiles: state.allProfiles.map(u => u.id === userId ? { ...u, is_verified: false, verified_at: null, verified_by: null } : u) });
+    renderAllProfiles();
+    showToast("Verification removed.");
+  } catch (err) {
+    showToast("Error: " + err.message);
   }
 }
 
