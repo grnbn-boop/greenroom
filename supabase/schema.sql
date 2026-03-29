@@ -155,8 +155,10 @@ create trigger trg_compute_overall
 -- ============================================================
 -- VENUE STATS VIEW
 -- Aggregated from approved reviews — used by the frontend
+-- security_invoker = true: view runs as the querying user, respecting RLS
+-- (avoids SECURITY DEFINER warning from Supabase Advisor)
 -- ============================================================
-create or replace view venue_stats as
+create or replace view venue_stats with (security_invoker = true) as
 select
   v.id,
   v.name,
@@ -186,6 +188,9 @@ group by v.id;
 alter table venues enable row level security;
 alter table profiles enable row level security;
 alter table reviews enable row level security;
+
+-- Note: spatial_ref_sys (PostGIS system table) cannot have RLS enabled — it is owned
+-- by the extension, not the project. Mute that Supabase Advisor warning manually.
 
 -- Venues: anyone can read, only admins can insert/update/delete
 create policy "venues_select_all" on venues for select using (true);
