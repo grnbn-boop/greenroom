@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initStarPickers();
   await initAuth();
   await loadVenues();
+  renderMarkers();
   renderVenueList();
   setupSearchListeners();
 });
