@@ -107,10 +107,17 @@ create table if not exists reviews (
   -- Computed overall (trigger-maintained)
   rating_overall  numeric(3,2),
 
+  -- Payment & deal transparency
+  anonymous       boolean default false,
+  payment_type    text check (payment_type in ('paid', 'door_deal', 'free', 'pay_to_play')),
+  deal_amount     numeric(10,2),
+  stipulations    text,
+
   -- Moderation
   status          review_status default 'pending',
   proof_link      text,
   proof_notes     text,
+  proof_image_url text,
   admin_note      text,          -- internal note from moderator
   reviewed_by     uuid references auth.users(id),
   reviewed_at     timestamptz,
@@ -190,7 +197,8 @@ alter table profiles enable row level security;
 alter table reviews enable row level security;
 
 -- Note: spatial_ref_sys (PostGIS system table) cannot have RLS enabled — it is owned
--- by the extension, not the project. Mute that Supabase Advisor warning manually.
+-- by the extension, not the project. Dismiss this warning in Supabase Dashboard >
+-- Advisors > Security rather than trying to alter the table.
 
 -- Venues: anyone can read, only admins can insert/update/delete
 create policy "venues_select_all" on venues for select using (true);
